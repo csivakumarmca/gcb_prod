@@ -104,7 +104,7 @@
     (function () {
       "use strict";
 
-      const ROUTER_VERSION = "v1.7.2.89-status-recovery-fix";
+      const ROUTER_VERSION = "v1.7.2.90-index-hold-warning-refresh";
       const C = window.RakCommon;
       const Auth = window.RakAuth;
       const Api = window.GenesysApi;
@@ -289,7 +289,14 @@
               writeCentralHoldRecords(records);
               broadcastCentralHoldEvent("HOLD_EXCEEDED", record);
               notifyHoldExceededOnce(record);
-              if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "warning", "Maximum hold duration reached. Manual Resume required.");
+              if (window.GcbDebug) {
+                window.GcbDebug.setStatus(
+                  "holdResume",
+                  "warning",
+                  "Maximum hold duration reached. Manual Resume required."
+                );
+              }
+              renderStatusLines();
               debugLog("INFO", "CENTRAL_HOLD_EXCEEDED", "key=" + key + " | conversationId=" + C.safeString(record.conversationId));
               changed = true;
               continue;
@@ -318,6 +325,7 @@
               writeCentralHoldRecords(records);
               broadcastCentralHoldEvent("RESUMED_AUTO", record);
               if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "success", "Auto resume sent by central monitor.");
+              renderStatusLines();
               debugLog("INFO", "CENTRAL_AUTO_RESUME_OK", "key=" + key + " | conversationId=" + C.safeString(record.conversationId));
               changed = true;
             } catch (error) {
@@ -329,6 +337,7 @@
               writeCentralHoldRecords(records);
               broadcastCentralHoldEvent("AUTO_RESUME_FAILED", record);
               if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "failed", "Central auto-resume failed: " + record.lastError);
+              renderStatusLines();
               debugLog("ERROR", "CENTRAL_AUTO_RESUME_FAILED", "key=" + key + " | " + record.lastError);
               changed = true;
             }

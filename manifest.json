@@ -1,7 +1,7 @@
 {
   "projectShortName": "AFT GCB",
   "projectFullName": "AFT Genesys Context Bridge",
-  "version": "v1.7.2.89-status-recovery-fix",
+  "version": "v1.7.2.90-index-hold-warning-refresh",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -64,7 +64,8 @@
     "DEV v1.7.2.86 changes the Prospects Contact Reason / Interaction Outcome mapping source from direct Genesys Data Table API access to participant data. The page reads only SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson, validates that both JSON arrays have matching counts, rebuilds the index-aligned mapping, removes duplicates through the existing rendering logic, and sorts the options. SI_Prospect_InteractionTypeListJson is also supported; when absent, Interaction Type continues to use the existing Data Table fallback. No ChatMonitor, Hold/Resume, wrap-up, retry, logging, or duplicate-control logic changed.",
     "DEV v1.7.2.87 removes the final direct Genesys Data Table call from prospects.html. Contact Reason and Interaction Outcome load only from SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson. Interaction Type loads only from SI_Prospect_InteractionTypeListJson. If the Interaction Type attribute is absent, the dropdown remains empty and a pending message is shown. Normal agents no longer require architect:datatable:view for the Prospects page.",
     "DEV v1.7.2.88 makes Architect participant data the only Prospects dropdown source. Legacy URL Data Action IDs are ignored. The page requires SI_Prospect_InteractionTypeListJson, SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson, validates and parses them, and logs the loaded counts. This fixes empty dropdowns when old Data Action URL parameters were still present.",
-    "DEV v1.7.2.89 corrects central status recovery. Maximum hold duration reached is now shown as Warning rather than Failed. A manual or automatic Resume immediately changes Hold/Resume status to Success and clears the warning. The Index Last Error calculation now ignores an older module error when a later success/recovery event exists for the same module, preventing resolved Prospects errors from continuing to display as current errors."
+    "DEV v1.7.2.89 corrects central status recovery. Maximum hold duration reached is now shown as Warning rather than Failed. A manual or automatic Resume immediately changes Hold/Resume status to Success and clears the warning. The Index Last Error calculation now ignores an older module error when a later success/recovery event exists for the same module, preventing resolved Prospects errors from continuing to display as current errors.",
+    "DEV v1.7.2.90 refreshes the Index Hold / Resume status immediately when the maximum hold duration warning is set. Previously the warning was stored but the Index status row was not re-rendered until another event. Auto-resume success and failure now also refresh immediately. No Hold/Resume business logic, timers, messaging, Prospects, ChatMonitor, or duplicate logic changed."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -77,7 +78,7 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.88-force-prospects-participant-data",
+  "sourceBaseline": "v1.7.2.89-status-recovery-fix",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
   "customer": "RAKBANK"

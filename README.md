@@ -1079,3 +1079,24 @@ Versions:
 - ChatMonitor UI: `v1.2.48`
 - Prospects: `Prospects_v3.35`
 - Cache: `172289`
+
+
+## v1.7.2.90-index-hold-warning-refresh
+
+Index Hold / Resume status refresh correction:
+
+```text
+Maximum hold duration reached
+→ Index immediately shows:
+Warning - Maximum hold duration reached. Manual Resume required.
+
+Resume completed
+→ Index immediately shows Success.
+```
+
+Versions:
+
+- AFT GCB: `v1.7.2.90-index-hold-warning-refresh`
+- ChatMonitor UI: `v1.2.49`
+- Prospects: `Prospects_v3.36`
+- Cache: `172290`
