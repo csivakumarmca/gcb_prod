@@ -1,7 +1,7 @@
 {
   "projectShortName": "RAKBANK GCB",
   "projectFullName": "RAKBANK Genesys Context Bridge",
-  "version": "v1.7.2.76-prospect-account-card-parameter",
+  "version": "v1.7.2.78-account-card-id-display-lists",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -51,7 +51,9 @@
     "DEV v1.7.2.73 separates Customer Details and Service Classification as top-level HTML sections and adjusts font sizes, field heights, spacing, padding, borders, and two-column proportions to match the previously approved Agent Script design. No data or submit logic changed.",
     "DEV v1.7.2.74 moves the approved Prospects CSS from the inline HTML style block to css/prospects.css. The Customer Details and Service Classification design is unchanged. No participant-data, dropdown, wrap-up, Submit, ChatMonitor, Hold/Resume, or notification logic changed.",
     "DEV v1.7.2.75 fixes the Card No / Account dropdown source. The Prospects page now reads only SI_Account_AccountIdList for dropdown options and no longer reads SI_Product_CardAccountNoList or CardAccountList. The selected value continues to be saved to pia_ddl_Selected_AccountNumber. No other Prospects, ChatMonitor, Hold/Resume, notification, or wrap-up logic changed.",
-    "DEV v1.7.2.76 changes the Prospects Card No / Account dropdown source to SI_Prospect_AccountOrCard_NumberList. On Submit, the selected value is saved to SI_Prospect_Selected_AccountOrCard_Number and also to the legacy pia_ddl_Selected_AccountNumber for compatibility. No other business logic changed."
+    "DEV v1.7.2.76 changes the Prospects Card No / Account dropdown source to SI_Prospect_AccountOrCard_NumberList. On Submit, the selected value is saved to SI_Prospect_Selected_AccountOrCard_Number and also to the legacy pia_ddl_Selected_AccountNumber for compatibility. No other business logic changed.",
+    "DEV v1.7.2.77 standardizes all Prospects participant-data names. Agent-selected values now use the Agent_Prospect_Selected_ prefix. Old Agent_Selected_, Prospects_Selected_, Prospects_, SI_Prospect_Selected_, and pia_ddl_Selected_ output variables were removed from the Prospects Submit update. Prospects submission metadata now uses Agent_Prospect_ names. No dropdown, wrap-up, ChatMonitor, notification, Hold/Resume, or duplicate-control logic changed.",
+    "DEV v1.7.2.78 changes the Prospects Card No / Account dropdown to two aligned participant-data lists: SI_Prospect_AccountOrCard_IdList and SI_Prospect_AccountOrCard_DisplayList. DisplayList is shown to the agent and the matching IdList value is stored. Selected outputs are Agent_Prospect_Selected_AccountOrCard_Id, Agent_Prospect_Selected_AccountOrCard_Display, and Agent_Prospect_Selected_AccountOrCard_Type."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -64,5 +66,5 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.75-account-list-source-fix"
+  "sourceBaseline": "v1.7.2.77-uniform-prospect-participant-names"
 }

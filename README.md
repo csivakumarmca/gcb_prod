@@ -631,3 +631,97 @@ Versions:
 - ChatMonitor UI: `v1.2.35`
 - Prospects: `Prospects_v3.22`
 - Cache: `172276`
+
+
+## v1.7.2.77-uniform-prospect-participant-names
+
+Prospects participant-data naming standard:
+
+### Agent-selected values
+
+```text
+Agent_Prospect_Selected_AccountOrCard_Number
+Agent_Prospect_Selected_AccountOrCard_Display
+Agent_Prospect_Selected_AccountOrCard_Type
+Agent_Prospect_Selected_TypeOfInteraction
+Agent_Prospect_Selected_ContactReason
+Agent_Prospect_Selected_InteractionOutcome
+Agent_Prospect_Selected_CombinedWrapupCodeName
+Agent_Prospect_Selected_ChannelType
+Agent_Prospect_Selected_Remarks
+```
+
+### Prospects submission metadata
+
+```text
+Agent_Prospect_WrapupCodeId
+Agent_Prospect_WrapupCreated
+Agent_Prospect_SubmittedDateTime
+```
+
+Removed output variable families:
+
+```text
+Agent_Selected_*
+Prospects_Selected_*
+Prospects_*
+SI_Prospect_Selected_*
+pia_ddl_Selected_*
+```
+
+Input dropdown source remains:
+
+```text
+SI_Prospect_AccountOrCard_NumberList
+```
+
+Versions:
+
+- GCB: `v1.7.2.77-uniform-prospect-participant-names`
+- ChatMonitor UI: `v1.2.36`
+- Prospects: `Prospects_v3.23`
+- Cache: `172277`
+
+
+## v1.7.2.78-account-card-id-display-lists
+
+Card No / Account dropdown input:
+
+```text
+SI_Prospect_AccountOrCard_IdList
+SI_Prospect_AccountOrCard_DisplayList
+```
+
+Example:
+
+```text
+SI_Prospect_AccountOrCard_IdList =
+CARD_987654|ACC_0342540096001
+
+SI_Prospect_AccountOrCard_DisplayList =
+Card - 1234********5678|Account - ********96001
+```
+
+The two lists must contain the same number of items in the same order.
+
+Dropdown behavior:
+
+```text
+Displayed value: matching DisplayList item
+Stored value: matching IdList item
+```
+
+Selected participant-data outputs:
+
+```text
+Agent_Prospect_Selected_AccountOrCard_Id
+Agent_Prospect_Selected_AccountOrCard_Display
+Agent_Prospect_Selected_AccountOrCard_Type
+```
+
+Versions:
+
+- GCB: `v1.7.2.78-account-card-id-display-lists`
+- ChatMonitor UI: `v1.2.37`
+- Prospects: `Prospects_v3.24`
+- Cache: `172278`

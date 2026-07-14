@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172276" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172278" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.22";
+      const DEFAULT_APP_VERSION = "Prospects_v3.24";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -122,10 +122,15 @@
         name: getFirstParam(["customerName", "SI_Customer_Name", "siCustomerName"]),
         type: getFirstParam(["customerType", "SI_Customer_Type", "siCustomerType"]),
         mobileNumber: getFirstParam(["mobileNumber", "customerMobileNumber", "SI_Customer_MobileNumber", "siCustomerMobileNumber"]),
-        cardAccountListRaw: getFirstParam([
-          "prospectAccountOrCardNumberList",
-          "SI_Prospect_AccountOrCard_NumberList",
-          "siProspectAccountOrCardNumberList"
+        cardAccountIdListRaw: getFirstParam([
+          "prospectAccountOrCardIdList",
+          "SI_Prospect_AccountOrCard_IdList",
+          "siProspectAccountOrCardIdList"
+        ]),
+        cardAccountDisplayListRaw: getFirstParam([
+          "prospectAccountOrCardDisplayList",
+          "SI_Prospect_AccountOrCard_DisplayList",
+          "siProspectAccountOrCardDisplayList"
         ]),
       };
 
@@ -260,7 +265,7 @@
         return "";
       }
 
-      function normalizeCardAccountItems(rawValue) {
+      function parseParticipantList(rawValue) {
         const raw = String(rawValue || "").trim();
         if (!raw) return [];
 
@@ -282,31 +287,36 @@
               return [text];
             });
 
-        const unique = new Map();
-        source.forEach((item) => {
-          let value = "";
-          let label = "";
-          let type = "";
+        return source
+          .map((item) => String(item ?? "").trim())
+          .filter(Boolean);
+      }
 
-          if (item && typeof item === "object") {
-            value = String(item.value ?? item.id ?? item.accountId ?? item.cardAccountId ?? item.label ?? "").trim();
-            label = String(item.label ?? item.display ?? item.name ?? value).trim();
-            type = String(item.type ?? item.productType ?? "").trim();
-          } else {
-            value = String(item || "").trim();
-            label = value;
-          }
+      function inferCardAccountType(displayText) {
+        const text = String(displayText || "").trim().toLowerCase();
+        if (text.startsWith("card") || text.includes(" card ")) return "Card";
+        if (text.startsWith("account") || text.includes(" account ")) return "Account";
+        return "";
+      }
 
-          if (!value && !label) return;
-          const finalValue = value || label;
-          const finalLabel = label || finalValue;
-          const key = finalValue.toLowerCase();
-          if (!unique.has(key)) {
-            unique.set(key, { value: finalValue, label: finalLabel, type });
-          }
-        });
+      function buildCardAccountItems(idListRaw, displayListRaw) {
+        const ids = parseParticipantList(idListRaw);
+        const displays = parseParticipantList(displayListRaw);
+        const count = Math.min(ids.length, displays.length);
+        const items = [];
 
-        return Array.from(unique.values());
+        for (let index = 0; index < count; index += 1) {
+          const id = ids[index];
+          const display = displays[index];
+          if (!id || !display) continue;
+          items.push({
+            value: id,
+            label: display,
+            type: inferCardAccountType(display),
+          });
+        }
+
+        return items;
       }
 
       function renderCustomerDetails() {
@@ -315,7 +325,10 @@
         customerMobileInput.value = customerDetails.mobileNumber || "";
 
         const previousValue = cardAccountSelect.value;
-        const items = normalizeCardAccountItems(customerDetails.cardAccountListRaw);
+        const items = buildCardAccountItems(
+          customerDetails.cardAccountIdListRaw,
+          customerDetails.cardAccountDisplayListRaw
+        );
         cardAccountSelect.innerHTML = '<option value="">Select Card/Account</option>';
 
         items.forEach((item) => {
@@ -352,8 +365,11 @@
             participantAttrText(attrs, "Customer_MobileNumber",
               participantAttrText(attrs, "mobileNumber", "")));
 
-        customerDetails.cardAccountListRaw = customerDetails.cardAccountListRaw ||
-          participantAttrText(attrs, "SI_Prospect_AccountOrCard_NumberList", "");
+        customerDetails.cardAccountIdListRaw = customerDetails.cardAccountIdListRaw ||
+          participantAttrText(attrs, "SI_Prospect_AccountOrCard_IdList", "");
+
+        customerDetails.cardAccountDisplayListRaw = customerDetails.cardAccountDisplayListRaw ||
+          participantAttrText(attrs, "SI_Prospect_AccountOrCard_DisplayList", "");
 
         renderCustomerDetails();
       }
@@ -1284,33 +1300,21 @@
 
           setRuntimeStatus("Saving Prospects details...");
           await setParticipantAttributes(token, {
-            // Customer Details selection moved from Agent Script into Prospects HTML.
-            // The selected value is stored only when the agent clicks Submit.
-            SI_Prospect_Selected_AccountOrCard_Number: selectedCardAccount.value,
-            pia_ddl_Selected_AccountNumber: selectedCardAccount.value,
-            Agent_Selected_CardAccount: selectedCardAccount.value,
-            Agent_Selected_CardAccount_Display: selectedCardAccount.label,
-            Agent_Selected_CardAccount_Type: selectedCardAccount.type,
-            Prospects_Selected_CardAccount: selectedCardAccount.value,
-            Prospects_Selected_CardAccount_Display: selectedCardAccount.label,
-            Prospects_Selected_CardAccount_Type: selectedCardAccount.type,
+            // Uniform Prospects participant-data naming.
+            Agent_Prospect_Selected_AccountOrCard_Id: selectedCardAccount.value,
+            Agent_Prospect_Selected_AccountOrCard_Display: selectedCardAccount.label,
+            Agent_Prospect_Selected_AccountOrCard_Type: selectedCardAccount.type,
+            Agent_Prospect_Selected_TypeOfInteraction: interactionTypeLabel,
+            Agent_Prospect_Selected_ContactReason: contactReasonText,
+            Agent_Prospect_Selected_InteractionOutcome: interactionOutcomeText,
+            Agent_Prospect_Selected_CombinedWrapupCodeName: wrapupCodeName,
+            Agent_Prospect_Selected_ChannelType: "Chat",
+            Agent_Prospect_Selected_Remarks: remarks.value,
 
-            // Existing Agent Selected participant-data names retained for compatibility.
-            Agent_Selected_ContactReason: contactReasonText,
-            Agent_Selected_InteractionOutcome: interactionOutcomeText,
-            Agent_Selected_CombinedWrapupCodeName: wrapupCodeName,
-            Agent_Selected_CallOrChatType: "Chat",
-            Agent_Selected_Remarks: remarks.value,
-
-            // Prospects-specific participant-data names retained separately.
-            Prospects_TypeOfInteraction: interactionTypeLabel,
-            Prospects_ContactReason: contactReasonText,
-            Prospects_InteractionOutcome: interactionOutcomeText,
-            Prospects_CombinedWrapupCodeName: wrapupCodeName,
-            Prospects_WrapupCodeId: selectedWrapup.id || "",
-            Prospects_WrapupCreated: selectedWrapup.created ? "Y" : "N",
-            Prospects_Remarks: remarks.value,
-            Prospects_SubmittedDateTime: new Date().toISOString(),
+            // Prospects submission metadata.
+            Agent_Prospect_WrapupCodeId: selectedWrapup.id || "",
+            Agent_Prospect_WrapupCreated: selectedWrapup.created ? "Y" : "N",
+            Agent_Prospect_SubmittedDateTime: new Date().toISOString(),
           });
           appendSubmitLog("PARTICIPANT_DATA_SAVED");
           await updateAssignDebugAttribute(token);
