@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172287" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172288" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.33";
+      const DEFAULT_APP_VERSION = "Prospects_v3.34";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -656,6 +656,10 @@
       }
 
       function loadInteractionTypesFromParticipantData() {
+        if (!String(participantProspectData.interactionTypeListJson || "").trim()) {
+          throw new Error("SI_Prospect_InteractionTypeListJson is missing");
+        }
+
         const values = parseParticipantJsonArray(
           participantProspectData.interactionTypeListJson,
           "SI_Prospect_InteractionTypeListJson"
@@ -673,60 +677,34 @@
         try {
           setRuntimeStatus("Loading Prospects values...");
 
-          if (actionConfig.all) {
-            const result = await executeDataAction(token, actionConfig.all, buildActionInput());
-            state.types = normalizeOptions(result.typeOfInteraction || result.types || result.interactionTypes || result);
-            state.contactReasons = normalizeOptions(result.contactReason || result.contactReasons || result.reasons || result);
-            state.outcomes = normalizeOptions(result.interactionOutcome || result.outcomes || result.results || result);
-            state.prospectRows = [];
-          } else if (actionConfig.type || actionConfig.contact || actionConfig.outcome) {
-            const [typesResult, contactResult, outcomeResult] = await Promise.all([
-              actionConfig.type ? executeDataAction(token, actionConfig.type, buildActionInput()) : Promise.resolve([]),
-              actionConfig.contact ? executeDataAction(token, actionConfig.contact, buildActionInput()) : Promise.resolve([]),
-              actionConfig.outcome ? executeDataAction(token, actionConfig.outcome, buildActionInput()) : Promise.resolve([]),
-            ]);
-            state.types = normalizeOptions(typesResult);
-            state.contactReasons = normalizeOptions(contactResult);
-            state.outcomes = normalizeOptions(outcomeResult);
-            state.prospectRows = [];
-          } else {
-            state.prospectRows = buildProspectRowsFromParticipantData();
-            state.debugInfo.mappingRows = state.prospectRows.length;
-            state.debugInfo.activeMappingRows = state.prospectRows.length;
-            state.debugInfo.mappingColumns =
-              "SI_Prospect_ContactReasonListJson | SI_Prospect_InteractionOutcomeListJson";
+          state.prospectRows = buildProspectRowsFromParticipantData();
+          state.debugInfo.mappingRows = state.prospectRows.length;
+          state.debugInfo.activeMappingRows = state.prospectRows.length;
+          state.debugInfo.mappingColumns =
+            "SI_Prospect_ContactReasonListJson | SI_Prospect_InteractionOutcomeListJson";
 
-            state.types = participantProspectData.interactionTypeListJson
-              ? loadInteractionTypesFromParticipantData()
-              : [];
+          state.types = loadInteractionTypesFromParticipantData();
+          state.debugInfo.typeRows = state.types.length;
+          state.debugInfo.typeColumns = "SI_Prospect_InteractionTypeListJson";
 
-            state.debugInfo.typeRows = state.types.length;
-            state.debugInfo.typeColumns = participantProspectData.interactionTypeListJson
-              ? "SI_Prospect_InteractionTypeListJson"
-              : "[not supplied]";
-
-            rebuildDependentOptionsFromRows();
-          }
+          rebuildDependentOptionsFromRows();
 
           renderTypeOptions();
           restoreDraft();
           if (state.prospectRows.length) rebuildDependentOptionsFromRows();
           refreshDependentLists();
-          appendSearchLog("VALUES_LOADED");
+          appendSearchLog(
+            "VALUES_LOADED" +
+            `::typeCount=${state.types.length}` +
+            `::mappingCount=${state.prospectRows.length}` +
+            `::contactOptionCount=${state.contactReasons.length}` +
+            `::outcomeOptionCount=${state.outcomes.length}`
+          );
           sessionStorage.removeItem(STORAGE_PROSPECTS_LOAD_RECOVERY_ATTEMPTED);
           await updateSearchDebugAttribute(token);
           renderDebugParameters();
-          if (!participantProspectData.interactionTypeListJson) {
-            setRuntimeStatus("Prospects mapping loaded. Interaction Type list is not supplied.");
-            centralStatus(
-              "prospects",
-              "pending",
-              "Prospects mapping loaded. Interaction Type list is not supplied."
-            );
-          } else {
-            setRuntimeStatus("Prospects values loaded.");
-            centralStatus("prospects", "success", "Prospects values loaded.");
-          }
+          setRuntimeStatus("Prospects values loaded from participant data.");
+          centralStatus("prospects", "success", "Prospects values loaded from participant data.");
         } catch (error) {
           const errorMessage = getErrorMessage(error);
           appendSearchLog("LOAD_ERROR::" + errorMessage);

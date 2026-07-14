@@ -1037,3 +1037,23 @@ Versions:
 - ChatMonitor UI: `v1.2.46`
 - Prospects: `Prospects_v3.33`
 - Cache: `172287`
+
+
+## v1.7.2.88-force-prospects-participant-data
+
+Prospects dropdown values now come only from these Architect participant attributes:
+
+```text
+SI_Prospect_InteractionTypeListJson
+SI_Prospect_ContactReasonListJson
+SI_Prospect_InteractionOutcomeListJson
+```
+
+Legacy Prospect Data Action URL parameters are ignored. All three participant attributes are required.
+
+Versions:
+
+- AFT GCB: `v1.7.2.88-force-prospects-participant-data`
+- ChatMonitor UI: `v1.2.47`
+- Prospects: `Prospects_v3.34`
+- Cache: `172288`
