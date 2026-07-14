@@ -3,7 +3,7 @@
   Purpose: Package notes for the current GCB build and deployment model.
            Documents direct page auth fallback, ChatMonitor replacement, and recommended URLs.
 -->
-# RAKBANK Genesys Context Bridge (GCB)
+# AFT Genesys Context Bridge (GCB)
 
 Updated package: v1.7.2.30-participant-status
 
@@ -911,3 +911,23 @@ Versions:
 - ChatMonitor UI: `v1.2.42`
 - Prospects: `Prospects_v3.29`
 - Cache: `172283`
+
+
+## Product Branding
+
+```text
+Product Name: AFT Genesys Context Bridge
+Product Short Name: AFT GCB
+Customer / Project Context: RAKBANK
+```
+
+## v1.7.2.84-aft-branding-standard
+
+This release updates product branding across code comments, metadata, README content, UI text, and release information.
+
+Versions:
+
+- AFT GCB: `v1.7.2.84-aft-branding-standard`
+- ChatMonitor UI: `v1.2.43`
+- Prospects: `Prospects_v3.30`
+- Cache: `172284`

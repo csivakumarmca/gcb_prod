@@ -1,7 +1,7 @@
 {
-  "projectShortName": "RAKBANK GCB",
-  "projectFullName": "RAKBANK Genesys Context Bridge",
-  "version": "v1.7.2.83-logs-prefix-standard",
+  "projectShortName": "AFT GCB",
+  "projectFullName": "AFT Genesys Context Bridge",
+  "version": "v1.7.2.84-aft-branding-standard",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -58,7 +58,8 @@
     "DEV v1.7.2.80 consolidates participant logging to one attribute per page/functionality. Prospects uses AFT_GCB_Logs_Prospects, ChatMonitor uses AFT_GCB_Logs_ChatMonitor, HoldResume uses AFT_GCB_Logs_HoldResume, and HoldTimer uses AFT_GCB_Logs_HoldTimer. Separate LastStep/LastStatus/LastTime/LastTrace/LastError attributes were removed. Existing page execution traces are combined into the single log value.",
     "DEV v1.7.2.81 keeps one participant log attribute per page and records only useful post-disposal evidence. Prospects records dropdown load result and submit/wrap-up outcome. ChatMonitor records message type, final send result and accumulated API retries without additional participant PATCH calls for each retry. HoldResume and HoldTimer record action, validation/API outcome and final result. Basic page-load and UI-only events are excluded.",
     "DEV v1.7.2.82 makes the Prospects Card No / Account field optional. Submit no longer blocks when no card/account is selected. When blank, the selected ID and display participant attributes are stored as empty strings and the page log records that the optional field was not selected. No other Prospects, logging, ChatMonitor, Hold/Resume, notification, retry, or wrap-up logic changed.",
-    "DEV v1.7.2.83 standardizes participant log attribute names so all logs sort together under the AFT_GCB_Logs_ prefix. Final names are AFT_GCB_Logs_Prospects, AFT_GCB_Logs_ChatMonitor, AFT_GCB_Logs_HoldResume, AFT_GCB_Logs_HoldTimer, and AFT_GCB_Logs_MonitorWake where applicable. No business logic changed."
+    "DEV v1.7.2.83 standardizes participant log attribute names so all logs sort together under the AFT_GCB_Logs_ prefix. Final names are AFT_GCB_Logs_Prospects, AFT_GCB_Logs_ChatMonitor, AFT_GCB_Logs_HoldResume, AFT_GCB_Logs_HoldTimer, and AFT_GCB_Logs_MonitorWake where applicable. No business logic changed.",
+    "DEV v1.7.2.84 standardizes product branding across the package. The product name is AFT Genesys Context Bridge (AFT GCB). RAKBANK remains only as the customer/project context. No business logic changed."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -71,5 +72,8 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.82-optional-card-account"
+  "sourceBaseline": "v1.7.2.83-logs-prefix-standard",
+  "productName": "AFT Genesys Context Bridge",
+  "productShortName": "AFT GCB",
+  "customer": "RAKBANK"
 }

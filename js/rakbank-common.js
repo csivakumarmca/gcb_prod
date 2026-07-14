@@ -3,7 +3,7 @@
  * Purpose: RAKBANK-specific common helper functions for legacy GCB page behavior.
  *          Provides compatibility utilities used by existing Hold/Prospects logic.
  */
-/* RAKBANK GCB Common Utilities v1.0.0 */
+/* AFT GCB Common Utilities v1.0.0 */
 (function (global) {
   "use strict";
 

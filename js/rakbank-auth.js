@@ -3,7 +3,7 @@
  * Purpose: RAKBANK-specific auth compatibility helper used by legacy GCB pages.
  *          Keeps older page-level auth calls aligned with the shared OAuth flow.
  */
-/* RAKBANK GCB Shared OAuth / MFA Recovery v1.0.0 */
+/* AFT GCB Shared OAuth / MFA Recovery v1.0.0 */
 (function (global) {
   "use strict";
 
