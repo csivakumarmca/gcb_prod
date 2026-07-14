@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172281" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172282" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.27";
+      const DEFAULT_APP_VERSION = "Prospects_v3.28";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -1233,11 +1233,7 @@
         const wrapupCodeName = buildWrapupCodeName(contactReasonText, interactionOutcomeText);
         const selectedCardAccount = getSelectedCardAccount();
 
-        if (!selectedCardAccount.value) {
-          showValidationError("Please select Card No / Account", cardAccountSelect);
-          return;
-        }
-        if (!interactionType) {
+if (!interactionType) {
           showValidationError("Please select Type of Interaction", typeSelect);
           return;
         }
@@ -1289,8 +1285,8 @@
           setRuntimeStatus("Saving Prospects details...");
           await setParticipantAttributes(token, {
             // Uniform Prospects participant-data naming.
-            Agent_Prospect_Selected_AccountOrCard_Id: selectedCardAccount.value,
-            Agent_Prospect_Selected_AccountOrCard_Display: selectedCardAccount.label,
+            Agent_Prospect_Selected_AccountOrCard_Id: selectedCardAccount.value || "",
+            Agent_Prospect_Selected_AccountOrCard_Display: selectedCardAccount.label || "",
             Agent_Prospect_Selected_TypeOfInteraction: interactionTypeLabel,
             Agent_Prospect_Selected_ContactReason: contactReasonText,
             Agent_Prospect_Selected_InteractionOutcome: interactionOutcomeText,
@@ -1364,7 +1360,7 @@
           `version::${APP_VERSION || "(blank)"}`,
           "stage::PROSPECT_SUBMIT",
           `status::${failed ? "FAILED" : "IN_PROGRESS_OR_SUCCESS"}`,
-          `selectedAccountOrCard::${getSelectedCardAccount().value || "(blank)"}`,
+          `selectedAccountOrCard::${getSelectedCardAccount().value || "(not selected - optional)"}`,
           `type::${getSelectedTypeLabel() || "(blank)"}`,
           `contactReason::${getSelectedContactReasonText() || "(blank)"}`,
           `interactionOutcome::${getSelectedInteractionOutcomeText() || "(blank)"}`,

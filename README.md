@@ -862,3 +862,26 @@ Versions:
 - ChatMonitor UI: `v1.2.40`
 - Prospects: `Prospects_v3.27`
 - Cache: `172281`
+
+
+## v1.7.2.82-optional-card-account
+
+The Prospects `Card No / Account` field is now optional.
+
+Behavior:
+
+```text
+No selection:
+Submit continues normally.
+Agent_Prospect_Selected_AccountOrCard_Id = ""
+Agent_Prospect_Selected_AccountOrCard_Display = ""
+```
+
+When selected, the existing ID/display mapping remains unchanged.
+
+Versions:
+
+- GCB: `v1.7.2.82-optional-card-account`
+- ChatMonitor UI: `v1.2.41`
+- Prospects: `Prospects_v3.28`
+- Cache: `172282`
