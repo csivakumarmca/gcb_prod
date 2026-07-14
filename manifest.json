@@ -1,7 +1,7 @@
 {
   "projectShortName": "AFT GCB",
   "projectFullName": "AFT Genesys Context Bridge",
-  "version": "v1.7.2.94-production-review-hardening",
+  "version": "v1.0.0",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -23,10 +23,11 @@
     "css/send-message.css"
   ],
   "notes": [
-    "DEV v1.7.2.94-production-review-hardening built from confirmed baseline v1.7.2.93-resume-limit-warning.",
-    "Hold summary refresh no longer overwrites an active Hold/Resume warning or final maximum-attempt result.",
+    "Initial production release v1.0.0, built from confirmed DEV baseline v1.7.2.94-production-review-hardening.",
+    "Includes production-review hardening validated in DEV.",
+    "Hold summary refresh does not overwrite active Hold/Resume warnings or final maximum-attempt results.",
     "Maximum Hold duration and maximum-attempt conditions are consistently shown as Warning states.",
-    "Central hold records include currentHoldCount and maxHoldAttempts so central auto-resume preserves the final-attempt warning.",
+    "Central hold records include currentHoldCount and maxHoldAttempts so manual and central auto-resume preserve the final-attempt warning.",
     "No greeting, transfer, supervisor, language, duplicate-send, message-send, Hold count, timer, Prospects submit, or wrap-up business rules changed."
   ],
   "fileMetadata": {
@@ -38,10 +39,11 @@
       "Keeps package metadata aligned with the deployed static file set."
     ]
   },
-  "environment": "DEVELOPMENT",
-  "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.93-resume-limit-warning",
+  "environment": "PRODUCTION",
+  "releaseTrack": "PROD",
+  "sourceBaseline": "v1.7.2.94-production-review-hardening",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
-  "customer": "RAKBANK"
+  "customer": "RAKBANK",
+  "productionCacheVersion": "100000"
 }

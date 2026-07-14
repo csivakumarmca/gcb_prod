@@ -1183,3 +1183,19 @@ Validation focus:
 2. Maximum Hold attempts must remain Warning, not Error.
 3. Final manual or automatic Resume must retain the maximum-attempt warning and count.
 4. Existing messaging, transfer, supervisor, language, duplicate-control, timer, and Prospects behavior must remain unchanged.
+
+
+## Initial Production Release v1.0.0
+
+Source DEV baseline: `v1.7.2.94-production-review-hardening`
+
+Production versions:
+
+- AFT GCB: `v1.0.0`
+- ChatMonitor UI: `v1.0.0`
+- Prospects: `Prospects_v1.0.0`
+- Cache: `100000`
+- Environment: `PRODUCTION`
+- Release track: `PROD`
+
+All visible runtime version values use the initial production version series.
