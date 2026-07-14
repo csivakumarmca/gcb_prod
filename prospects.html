@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172286" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172287" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.32";
+      const DEFAULT_APP_VERSION = "Prospects_v3.33";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -454,7 +454,6 @@
         participantProspectData.interactionOutcomeListJson =
           participantAttrText(attrs, "SI_Prospect_InteractionOutcomeListJson", "");
 
-        dataTableConfig.types = participantAttrText(attrs, "AFT_GCB_ProspectsTypeDataTableId", dataTableConfig.types);
         wrapupConfig.createIfMissing = participantAttrBool(attrs, "AFT_GCB_CreateWrapupIfMissing", wrapupConfig.createIfMissing);
         wrapupConfig.disconnectAfterSubmit = participantAttrBool(attrs, "AFT_GCB_DisconnectAfterProspectsSubmit", wrapupConfig.disconnectAfterSubmit);
         wrapupConfig.nameSeparator = participantAttrText(attrs, "AFT_GCB_WrapupNameSeparator", wrapupConfig.nameSeparator);
@@ -567,7 +566,7 @@
           `mappingSource: participant data`,
           `contactReasonListJson: ${participantProspectData.contactReasonListJson ? "[available]" : "[missing]"}`,
           `interactionOutcomeListJson: ${participantProspectData.interactionOutcomeListJson ? "[available]" : "[missing]"}`,
-          `interactionTypeListJson: ${participantProspectData.interactionTypeListJson ? "[available]" : "[not supplied - Data Table fallback]"}`,
+          `interactionTypeListJson: ${participantProspectData.interactionTypeListJson ? "[available]" : "[not supplied]"}`,
           `type column aliases: ${dataTableColumnConfig.typeOfInteraction.join(" | ")}`,
           `contact column aliases: ${dataTableColumnConfig.contactReason.join(" | ")}`,
           `outcome column aliases: ${dataTableColumnConfig.interactionOutcome.join(" | ")}`,
@@ -697,16 +696,14 @@
             state.debugInfo.mappingColumns =
               "SI_Prospect_ContactReasonListJson | SI_Prospect_InteractionOutcomeListJson";
 
-            if (participantProspectData.interactionTypeListJson) {
-              state.types = loadInteractionTypesFromParticipantData();
-              state.debugInfo.typeRows = state.types.length;
-              state.debugInfo.typeColumns = "SI_Prospect_InteractionTypeListJson";
-            } else {
-              const typeRows = await fetchDataTableRows(token, dataTableConfig.types);
-              state.debugInfo.typeRows = typeRows.length;
-              state.debugInfo.typeColumns = getSampleColumns(typeRows[0]);
-              state.types = normalizeTypeRows(typeRows);
-            }
+            state.types = participantProspectData.interactionTypeListJson
+              ? loadInteractionTypesFromParticipantData()
+              : [];
+
+            state.debugInfo.typeRows = state.types.length;
+            state.debugInfo.typeColumns = participantProspectData.interactionTypeListJson
+              ? "SI_Prospect_InteractionTypeListJson"
+              : "[not supplied]";
 
             rebuildDependentOptionsFromRows();
           }
@@ -719,8 +716,17 @@
           sessionStorage.removeItem(STORAGE_PROSPECTS_LOAD_RECOVERY_ATTEMPTED);
           await updateSearchDebugAttribute(token);
           renderDebugParameters();
-          setRuntimeStatus("Prospects values loaded.");
-          centralStatus("prospects", "success", "Prospects values loaded.");
+          if (!participantProspectData.interactionTypeListJson) {
+            setRuntimeStatus("Prospects mapping loaded. Interaction Type list is not supplied.");
+            centralStatus(
+              "prospects",
+              "pending",
+              "Prospects mapping loaded. Interaction Type list is not supplied."
+            );
+          } else {
+            setRuntimeStatus("Prospects values loaded.");
+            centralStatus("prospects", "success", "Prospects values loaded.");
+          }
         } catch (error) {
           const errorMessage = getErrorMessage(error);
           appendSearchLog("LOAD_ERROR::" + errorMessage);

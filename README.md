@@ -1009,3 +1009,31 @@ Versions:
 - ChatMonitor UI: `v1.2.45`
 - Prospects: `Prospects_v3.32`
 - Cache: `172286`
+
+
+## v1.7.2.87-remove-all-prospects-datatable-calls
+
+All direct Genesys Data Table calls have been removed from `prospects.html`.
+
+The page reads only:
+
+```text
+SI_Prospect_InteractionTypeListJson
+SI_Prospect_ContactReasonListJson
+SI_Prospect_InteractionOutcomeListJson
+```
+
+When `SI_Prospect_InteractionTypeListJson` is not supplied, the Type of Interaction dropdown remains empty and the page shows a pending message. Contact Reason and Interaction Outcome continue to load from participant data.
+
+Normal agents no longer require:
+
+```text
+architect:datatable:view
+```
+
+Versions:
+
+- AFT GCB: `v1.7.2.87-remove-all-prospects-datatable-calls`
+- ChatMonitor UI: `v1.2.46`
+- Prospects: `Prospects_v3.33`
+- Cache: `172287`

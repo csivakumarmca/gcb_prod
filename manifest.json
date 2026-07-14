@@ -1,7 +1,7 @@
 {
   "projectShortName": "AFT GCB",
   "projectFullName": "AFT Genesys Context Bridge",
-  "version": "v1.7.2.86-prospects-participant-mapping",
+  "version": "v1.7.2.87-remove-all-prospects-datatable-calls",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -61,7 +61,8 @@
     "DEV v1.7.2.83 standardizes participant log attribute names so all logs sort together under the AFT_GCB_Logs_ prefix. Final names are AFT_GCB_Logs_Prospects, AFT_GCB_Logs_ChatMonitor, AFT_GCB_Logs_HoldResume, AFT_GCB_Logs_HoldTimer, and AFT_GCB_Logs_MonitorWake where applicable. No business logic changed.",
     "DEV v1.7.2.84 standardizes product branding across the package. The product name is AFT Genesys Context Bridge (AFT GCB). RAKBANK remains only as the customer/project context. No business logic changed.",
     "DEV v1.7.2.85 fixes participant log placement. AFT_GCB_Logs_ChatMonitor is now written to the current agent participant instead of the customer participant. Customer-side AFT_GCB send-lock and duplicate attributes remain unchanged because ChatMonitor requires them. HoldTimer and HoldResume now both write to the single functionality log AFT_GCB_Logs_HoldResume, because HoldTimer performs the actual Hold/Resume message action. AFT_GCB_Logs_HoldTimer is removed. No messaging, retry, duplicate, wrap-up, or UI business logic changed.",
-    "DEV v1.7.2.86 changes the Prospects Contact Reason / Interaction Outcome mapping source from direct Genesys Data Table API access to participant data. The page reads only SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson, validates that both JSON arrays have matching counts, rebuilds the index-aligned mapping, removes duplicates through the existing rendering logic, and sorts the options. SI_Prospect_InteractionTypeListJson is also supported; when absent, Interaction Type continues to use the existing Data Table fallback. No ChatMonitor, Hold/Resume, wrap-up, retry, logging, or duplicate-control logic changed."
+    "DEV v1.7.2.86 changes the Prospects Contact Reason / Interaction Outcome mapping source from direct Genesys Data Table API access to participant data. The page reads only SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson, validates that both JSON arrays have matching counts, rebuilds the index-aligned mapping, removes duplicates through the existing rendering logic, and sorts the options. SI_Prospect_InteractionTypeListJson is also supported; when absent, Interaction Type continues to use the existing Data Table fallback. No ChatMonitor, Hold/Resume, wrap-up, retry, logging, or duplicate-control logic changed.",
+    "DEV v1.7.2.87 removes the final direct Genesys Data Table call from prospects.html. Contact Reason and Interaction Outcome load only from SI_Prospect_ContactReasonListJson and SI_Prospect_InteractionOutcomeListJson. Interaction Type loads only from SI_Prospect_InteractionTypeListJson. If the Interaction Type attribute is absent, the dropdown remains empty and a pending message is shown. Normal agents no longer require architect:datatable:view for the Prospects page."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -74,7 +75,7 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.85-agent-side-logs-fix",
+  "sourceBaseline": "v1.7.2.86-prospects-participant-mapping",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
   "customer": "RAKBANK"
