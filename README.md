@@ -931,3 +931,47 @@ Versions:
 - ChatMonitor UI: `v1.2.43`
 - Prospects: `Prospects_v3.30`
 - Cache: `172284`
+
+
+## v1.7.2.85-agent-side-logs-fix
+
+### Participant log placement correction
+
+ChatMonitor log:
+
+```text
+AFT_GCB_Logs_ChatMonitor
+```
+
+is now written to the current agent participant.
+
+The following ChatMonitor control attributes remain on the customer participant because they are required for cross-tab locking and duplicate prevention:
+
+```text
+AFT_GCB_SendLockKey
+AFT_GCB_SendLockOwner
+AFT_GCB_SendLockMessageType
+AFT_GCB_SendLockTime
+AFT_GCB_JoinedSentKeys
+```
+
+### Hold/Resume functionality log
+
+Both `holdresume.html` and `holdtimer.html` now use:
+
+```text
+AFT_GCB_Logs_HoldResume
+```
+
+The separate attribute below is removed:
+
+```text
+AFT_GCB_Logs_HoldTimer
+```
+
+Versions:
+
+- AFT GCB: `v1.7.2.85-agent-side-logs-fix`
+- ChatMonitor UI: `v1.2.44`
+- Prospects: `Prospects_v3.31`
+- Cache: `172285`

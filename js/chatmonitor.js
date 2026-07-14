@@ -4,7 +4,7 @@
  *          Uses communication-leg send keys, runtime memory, localStorage, and participant data duplicate checks.
  *          Maintains support/admin dashboard status and exportable logs.
  */
-const APP_VERSION = 'v1.2.43';
+const APP_VERSION = 'v1.2.44';
 let currentUser = null;
 let channel = null;
 let notifySocket = null;
@@ -1220,7 +1220,19 @@ function processConversationBody(body, source='notification'){
   refreshTables();
   if(info.state==='JOINED / CONNECTED'){
     log('INFO',`JOINED / CONNECTED detected. recordId=${rec.recordId}; conversationId=${rec.conversationId}; communicationId=${rec.communicationId||'-'}; autoSend=${$('autoSendGreeting').checked}; source=${source}`);
-    maybeAutoSendGreeting(rec).catch(e=>{ rec.greetingStatus='Failed'; rec.lastAction=e.message; addAdminEvent('AUTO GREETING ERROR',rec,e.message); log('ERROR',e.message); refreshTables(); });
+    maybeAutoSendGreeting(rec).catch(async e=>{
+      rec.greetingStatus='Failed';
+      rec.lastAction=e.message;
+      addAdminEvent('AUTO GREETING ERROR',rec,e.message);
+      log('ERROR',e.message);
+      await writeChatMonitorAgentLogSafe(
+        rec,
+        'FAILED',
+        'MESSAGE_SEND',
+        `messageType::${rec.messageType || 'MESSAGE'} ==> error::${e.message || e}`
+      );
+      refreshTables();
+    });
   }
 }
 function findCurrentAgentParticipant(participants){
@@ -1669,6 +1681,27 @@ async function getLatestCustomerAttributes(rec){
     return {attrs:{}, customerParticipantId:rec.customerParticipantId || ''};
   }
 }
+async function writeChatMonitorAgentLogSafe(rec, status, stage, details){
+  try{
+    const participantId=String(rec?.participantId||'').trim();
+    const conversationId=String(rec?.conversationId||'').trim();
+    if(!conversationId || !participantId) return;
+    const value=[
+      new Date().toISOString(),
+      `version::${APP_VERSION}`,
+      `stage::${stage || 'MESSAGE_SEND'}`,
+      `status::${status || 'INFO'}`,
+      details || '',
+      participantApiRetrySummary()
+    ].filter(Boolean).join(' ==> ').slice(0,4000);
+    await api(`/api/v2/conversations/${encodeURIComponent(conversationId)}/participants/${encodeURIComponent(participantId)}/attributes`,{
+      method:'PATCH',
+      body:JSON.stringify({attributes:{AFT_GCB_Logs_ChatMonitor:value}})
+    });
+  }catch(e){
+    log('WARN',{chatMonitorAgentLogWriteFailed:true,error:e.message,conversationId:rec?.conversationId||'',participantId:rec?.participantId||''});
+  }
+}
 async function reserveCrossTabSendLock(rec, key, msgType){
   if(!rec.customerParticipantId){
     log('WARN',`No customer participant ID found for cross-tab send lock. Falling back to participant-data duplicate check only. key=${key}`);
@@ -1688,8 +1721,7 @@ async function reserveCrossTabSendLock(rec, key, msgType){
     AFT_GCB_SendLockKey:key,
     AFT_GCB_SendLockOwner:owner,
     AFT_GCB_SendLockMessageType:msgType,
-    AFT_GCB_SendLockTime:new Date().toISOString(),
-    AFT_GCB_Logs_ChatMonitor:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::IN_PROGRESS ==> messageType::${msgType} ==> ${participantApiRetrySummary()}`
+    AFT_GCB_SendLockTime:new Date().toISOString()
   };
   await api(`/api/v2/conversations/${encodeURIComponent(rec.conversationId)}/participants/${encodeURIComponent(rec.customerParticipantId)}/attributes`,{
     method:'PATCH',body:JSON.stringify({attributes})
@@ -1724,7 +1756,6 @@ async function updateCustomerParticipantAttributes(rec, key, decision){
     AFT_GCB_LastJoinedSentName: rec.agentName || '',
     AFT_GCB_LastJoinedSentRoleMatch: decision.supervisorRole ? 'Supervisor' : 'Agent',
     AFT_GCB_LastJoinedSentTime: new Date().toISOString(),
-    AFT_GCB_Logs_ChatMonitor:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::SUCCESS ==> messageType::${decision.messageType || 'MESSAGE'} ==> participantData::UPDATED ==> ${participantApiRetrySummary()}`,
     AFT_GCB_SendLockKey:'',
     AFT_GCB_SendLockOwner:'',
     AFT_GCB_SendLockMessageType:'',
@@ -1734,6 +1765,12 @@ async function updateCustomerParticipantAttributes(rec, key, decision){
     method:'PATCH',body:JSON.stringify({attributes})
   });
   rec.existingJoinedKeys=mergedKeys;
+  await writeChatMonitorAgentLogSafe(
+    rec,
+    'SUCCESS',
+    'MESSAGE_SEND',
+    `messageType::${decision.messageType || 'MESSAGE'} ==> customerParticipantData::UPDATED`
+  );
   return result;
 }
 async function maybeAutoSendGreeting(rec){
