@@ -328,6 +328,30 @@
       function setActionState(status, detail){
         try { localStorage.setItem(buildActionKey(), JSON.stringify({ status:status, detail:safe(detail), action:CONFIG.externalAction, requestId:CONFIG.requestId, savedAt:Date.now(), savedAtUtc:new Date().toISOString(), page:"holdtimer.html" })); } catch(_) {}
       }
+      async function writeHoldTimerParticipantLogSafe(status, step, trace, errorText){
+        try {
+          const token=getAccessToken();
+          const participantId=CONFIG.agentParticipantId || CONFIG.participantId;
+          if (!token || !CONFIG.conversationId || !participantId) return;
+          const logParts=[
+            new Date().toISOString(),
+            safe(step || "UNKNOWN"),
+            safe(status || "INFO"),
+            safe(trace || "")
+          ];
+          if(errorText) logParts.push("ERROR::" + safe(errorText));
+          const attributes={
+            AFT_GCB_HoldTimer_Logs:logParts.join(" ==> ").slice(0,4000)
+          };
+          const endpoint=API_BASE + "/api/v2/conversations/" + encodeURIComponent(CONFIG.conversationId) +
+            "/participants/" + encodeURIComponent(participantId) + "/attributes";
+          const response=await fetch(endpoint,{method:"PATCH",headers:{"Authorization":"Bearer " + token,"Content-Type":"application/json"},body:JSON.stringify({attributes:attributes})});
+          if (!response.ok) console.warn("AFT GCB HoldTimer participant log write failed", response.status);
+        } catch(logError) {
+          console.warn("AFT GCB HoldTimer participant log write failed", logError);
+        }
+      }
+
       async function sendMessage(action){
         const token=getAccessToken();
         if (!token) throw new Error("OAuth token missing. Open/refresh GCB index page first.");
@@ -353,6 +377,7 @@
           setTimeout(() => { startPKCELogin().catch(err => { processingLabel="Login failed"; setCls("exceeded"); setText("icon","⚠️"); setText("label", err && err.message ? err.message : String(err)); }); }, 100);
           return;
         }
+        const participantTrace=["action::" + CONFIG.externalAction,"source::HOLDTIMER_EXTERNAL"];
         processingAction=true;
         processingLabel=CONFIG.externalAction === "HOLD" ? "Sending Hold" : "Sending Resume";
         render();
@@ -366,13 +391,17 @@
               if (records[rec.key]) { records[rec.key].status="RESUME_IN_PROGRESS"; records[rec.key].resumeSent=true; records[rec.key].resumeAttemptTimeUtc=new Date().toISOString(); writeRecords(records); broadcast("RESUME_IN_PROGRESS", records[rec.key]); }
             }
           }
+          participantTrace.push("messageApi::START");
           await sendMessage(CONFIG.externalAction);
+          participantTrace.push("messageApi::SUCCESS");
           if (CONFIG.externalAction === "HOLD") saveHoldRecord();
           else {
             removeHoldRecord("EXTERNAL_RESUME");
             stopAllBlinking();
           }
           setActionState("DONE", "OK");
+          participantTrace.push("final::SUCCESS");
+          await writeHoldTimerParticipantLogSafe("SUCCESS", CONFIG.externalAction + "_COMPLETED", participantTrace.join(" ==> "), "");
         } catch (err) {
           try { localStorage.removeItem(buildActionKey()); } catch(_) {}
           processingLabel="Action failed";
@@ -381,6 +410,8 @@
           setText("label", safe(err.message || err).slice(0, 40));
           setText("time","--:--");
           setProgress(100);
+          participantTrace.push("ERROR::" + safe(err.message || err));
+          await writeHoldTimerParticipantLogSafe("FAILED", CONFIG.externalAction + "_FAILED", participantTrace.join(" ==> "), err.message || String(err));
           setTimeout(function(){ processingAction=false; render(); }, 2500);
           return;
         }

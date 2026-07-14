@@ -4,7 +4,7 @@
  *          Uses communication-leg send keys, runtime memory, localStorage, and participant data duplicate checks.
  *          Maintains support/admin dashboard status and exportable logs.
  */
-const APP_VERSION = 'v1.2.37';
+const APP_VERSION = 'v1.2.40';
 let currentUser = null;
 let channel = null;
 let notifySocket = null;
@@ -33,6 +33,17 @@ const MAX_RECOVERY_CONVERSATIONS = 5;
 const MAX_CONCISE_LOG_EVENTS = 50;
 const API_MAX_ATTEMPTS = 3; // Standard Genesys REST transaction: maximum 3 total attempts.
 const API_RETRY_DELAYS_MS = [0, 1000, 3000];
+let participantApiRetryTrace = [];
+function recordParticipantApiRetry(path, method, status, attempt, nextAttempt, waitMs){
+  participantApiRetryTrace.push(
+    `api::${method || 'GET'} ${path} ==> status::${status} ==> attempt::${attempt} ==> nextAttempt::${nextAttempt} ==> waitMs::${waitMs}`
+  );
+  if(participantApiRetryTrace.length > 4) participantApiRetryTrace = participantApiRetryTrace.slice(-4);
+}
+function participantApiRetrySummary(){
+  return participantApiRetryTrace.length ? participantApiRetryTrace.join(' | ') : 'apiRetry::NONE';
+}
+
 const NOTIFICATION_RECONNECT_ATTEMPTS_PER_CYCLE = 3; // Independent from REST retry policy.
 const NOTIFICATION_RECONNECT_COOLDOWN_MS = 5 * 60 * 1000;
 const NOTIFICATION_RECONNECT_DELAYS_MS = [2000, 5000, 10000];
@@ -604,6 +615,7 @@ async function api(path, opts={}){
       if(!retryable || attempt>=API_MAX_ATTEMPTS) throw error;
       const waitMs=retryAfterMs(res,API_RETRY_DELAYS_MS[attempt]||3000);
       log('WARN',{apiRetry:true,path,method:opts.method||'GET',status:res.status,attempt,nextAttempt:attempt+1,waitMs});
+      recordParticipantApiRetry(path,opts.method||'GET',res.status,attempt,attempt+1,waitMs);
       await delay(waitMs);
     }catch(error){
       if(error?.status) throw error;
@@ -611,6 +623,7 @@ async function api(path, opts={}){
       if(attempt>=API_MAX_ATTEMPTS) throw error;
       const waitMs=API_RETRY_DELAYS_MS[attempt]||3000;
       log('WARN',{apiRetry:true,path,method:opts.method||'GET',status:'NETWORK',attempt,nextAttempt:attempt+1,waitMs});
+      recordParticipantApiRetry(path,opts.method||'GET','NETWORK',attempt,attempt+1,waitMs);
       await delay(waitMs);
     }
   }
@@ -1675,7 +1688,8 @@ async function reserveCrossTabSendLock(rec, key, msgType){
     AFT_GCB_SendLockKey:key,
     AFT_GCB_SendLockOwner:owner,
     AFT_GCB_SendLockMessageType:msgType,
-    AFT_GCB_SendLockTime:new Date().toISOString()
+    AFT_GCB_SendLockTime:new Date().toISOString(),
+    AFT_GCB_ChatMonitor_Logs:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::IN_PROGRESS ==> messageType::${msgType} ==> ${participantApiRetrySummary()}`
   };
   await api(`/api/v2/conversations/${encodeURIComponent(rec.conversationId)}/participants/${encodeURIComponent(rec.customerParticipantId)}/attributes`,{
     method:'PATCH',body:JSON.stringify({attributes})
@@ -1710,6 +1724,7 @@ async function updateCustomerParticipantAttributes(rec, key, decision){
     AFT_GCB_LastJoinedSentName: rec.agentName || '',
     AFT_GCB_LastJoinedSentRoleMatch: decision.supervisorRole ? 'Supervisor' : 'Agent',
     AFT_GCB_LastJoinedSentTime: new Date().toISOString(),
+    AFT_GCB_ChatMonitor_Logs:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::SUCCESS ==> messageType::${decision.messageType || 'MESSAGE'} ==> participantData::UPDATED ==> ${participantApiRetrySummary()}`,
     AFT_GCB_SendLockKey:'',
     AFT_GCB_SendLockOwner:'',
     AFT_GCB_SendLockMessageType:'',

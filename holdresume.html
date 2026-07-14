@@ -1875,6 +1875,34 @@
       return sanitizeKey((CONFIG.conversationId || "NO_CONV") + "-" + action + "-" + (CONFIG.agentCommunicationId || CONFIG.communicationId || "NO_COMM") + "-" + Date.now());
     }
 
+    async function writeHoldResumeParticipantLogSafe(status, step, trace, errorText) {
+      try {
+        const token = getAccessToken();
+        const participantId = CONFIG.agentParticipantId || CONFIG.participantId;
+        if (!token || !CONFIG.conversationId || !participantId) return;
+        const logParts = [
+          new Date().toISOString(),
+          safeString(step || "UNKNOWN"),
+          safeString(status || "INFO"),
+          safeString(trace || "")
+        ];
+        if (errorText) logParts.push("ERROR::" + safeString(errorText));
+        const attributes = {
+          AFT_GCB_HoldResume_Logs: logParts.join(" ==> ").slice(0, 4000)
+        };
+        const endpoint = API_BASE + "/api/v2/conversations/" + encodeURIComponent(CONFIG.conversationId) +
+          "/participants/" + encodeURIComponent(participantId) + "/attributes";
+        const response = await fetch(endpoint, {
+          method: "PATCH",
+          headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+          body: JSON.stringify({ attributes: attributes })
+        });
+        if (!response.ok) addDebug("PARTICIPANT_LOG_WRITE_FAILED", "HTTP " + response.status);
+      } catch (logError) {
+        addDebug("PARTICIPANT_LOG_WRITE_FAILED", logError && logError.message ? logError.message : String(logError));
+      }
+    }
+
     async function sendMessageToConversation(action, messageText) {
       let token = getAccessToken();
       if (!token) {
@@ -2701,6 +2729,10 @@
       }
 
       const messageText = action === "HOLD" ? CONFIG.holdMessageText : CONFIG.resumeMessageText;
+      const participantTrace = [
+        "action::" + action,
+        "source::" + safeString(triggerSource)
+      ];
 
       if (action === "HOLD") {
         requestBrowserNotificationPermissionIfPossible(triggerSource === "EXTERNAL" ? "EXTERNAL_HOLD" : "HOLD_CLICK");
@@ -2712,6 +2744,8 @@
         setStatus(validationMessage, "error");
         addDebug("VALIDATION_BLOCK", "Max hold attempts reached. trigger=" + safeString(triggerSource) + " | effectiveCount=" + getEffectiveHoldCount() + " | max=" + CONFIG.maxHoldAttempts);
         updateButtonState();
+        participantTrace.push("validation::MAX_ATTEMPTS_BLOCKED");
+        await writeHoldResumeParticipantLogSafe("BLOCKED", "VALIDATION", participantTrace.join(" ==> "), validationMessage);
         return { blocked: true, reason: "MAX_ATTEMPTS" };
       }
 
@@ -2731,6 +2765,7 @@
       setStatus(action === "HOLD" ? "Sending Hold message..." : "Sending Resume message...", "info");
 
       try {
+        participantTrace.push("messageApi::START");
         const result = await sendMessageToConversation(action, messageText);
         if (result && result.redirected) return { redirected: true };
 
@@ -2753,7 +2788,10 @@
         }
 
         updateButtonState();
+        participantTrace.push("messageApi::SUCCESS");
         await refreshHoldSummaryAfterAction(action);
+        participantTrace.push("holdSummary::REFRESHED");
+        await writeHoldResumeParticipantLogSafe("SUCCESS", action + "_COMPLETED", participantTrace.join(" ==> "), "");
         hideStatusSoon();
         return { ok: true, action: action };
       } catch (err) {
@@ -2763,6 +2801,8 @@
         }
         setStatus(err.message || String(err), "error");
         addDebug(triggerSource === "EXTERNAL" ? "EXTERNAL_ACTION_FAILED" : "CLICK_FAILED", err.message || String(err));
+        participantTrace.push("ERROR::" + safeString(err.message || err));
+        await writeHoldResumeParticipantLogSafe("FAILED", action + "_FAILED", participantTrace.join(" ==> "), err.message || String(err));
         throw err;
       } finally {
         isProcessing = false;

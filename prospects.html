@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172278" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172281" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.24";
+      const DEFAULT_APP_VERSION = "Prospects_v3.27";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -138,8 +138,8 @@
       const GENESYS_REGION = getParam("region") || getParam("gcTargetEnv") || sessionStorage.getItem(STORAGE_REGION) || DEFAULT_GENESYS_REGION;
       const LOGIN_BASE = `https://login.${GENESYS_REGION}`;
       const API_BASE = `https://api.${GENESYS_REGION}`;
-      const SEARCH_DEBUG_ATTRIBUTE_NAME = "AFT_DFN_LOG_SEARCH_PROSPECT_DROPDOWN";
-      const ASSIGN_DEBUG_ATTRIBUTE_NAME = "AFT_DFN_LOG_ASSIGN_WRAPUP_CODE_TO_INTERACTION";
+      const SEARCH_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Prospects_Logs";
+      const ASSIGN_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Prospects_Logs";
       const DEBUG_ATTRIBUTE_MAX_LENGTH = 20000;
       const draftKey = `RAK_PROSPECTS_DRAFT_${context.conversationId}_${context.communicationId}`;
       const submitKey = `RAK_PROSPECTS_SUBMITTED_${context.conversationId}_${context.communicationId}`;
@@ -1188,26 +1188,14 @@
       }
 
       function buildSearchDebugLog() {
-        const contact = { label: getSelectedContactReasonText() };
-        const outcome = { label: getSelectedInteractionOutcomeText() };
         return [
-          "START",
-          "SEARCH_PROSPECT_DROPDOWN",
+          new Date().toISOString(),
           `version::${APP_VERSION || "(blank)"}`,
-          `conversationId::${context.conversationId || "(blank)"}`,
-          `agentParticipantId::${context.participantId || "(blank)"}`,
-          `typeRows::${state.debugInfo.typeRows}`,
-          `mappingRows::${state.debugInfo.mappingRows}`,
-          `activeMappingRows::${state.debugInfo.activeMappingRows}`,
+          "stage::DROPDOWN_DATA_LOAD",
+          "status::SUCCESS",
           `typeOptions::${state.debugInfo.typeOptions}`,
           `contactOptions::${state.debugInfo.contactOptions}`,
-          `outcomeOptions::${state.debugInfo.outcomeOptions}`,
-          `selectedType::${getSelectedTypeLabel() || "(blank)"}`,
-          `selectedContactReason::${contact.label || "(blank)"}`,
-          `selectedInteractionOutcome::${outcome.label || "(blank)"}`,
-          `contactSearch::${contactSearch.value || "(blank)"}`,
-          `outcomeSearch::${outcomeSearch.value || "(blank)"}`,
-          state.debugInfo.searchLog || "NO_SEARCH_LOG"
+          `outcomeOptions::${state.debugInfo.outcomeOptions}`
         ].join(" ==> ");
       }
 
@@ -1303,7 +1291,6 @@
             // Uniform Prospects participant-data naming.
             Agent_Prospect_Selected_AccountOrCard_Id: selectedCardAccount.value,
             Agent_Prospect_Selected_AccountOrCard_Display: selectedCardAccount.label,
-            Agent_Prospect_Selected_AccountOrCard_Type: selectedCardAccount.type,
             Agent_Prospect_Selected_TypeOfInteraction: interactionTypeLabel,
             Agent_Prospect_Selected_ContactReason: contactReasonText,
             Agent_Prospect_Selected_InteractionOutcome: interactionOutcomeText,
@@ -1315,6 +1302,8 @@
             Agent_Prospect_WrapupCodeId: selectedWrapup.id || "",
             Agent_Prospect_WrapupCreated: selectedWrapup.created ? "Y" : "N",
             Agent_Prospect_SubmittedDateTime: new Date().toISOString(),
+
+            // Participant-visible Prospects execution status.
           });
           appendSubmitLog("PARTICIPANT_DATA_SAVED");
           await updateAssignDebugAttribute(token);
@@ -1368,21 +1357,21 @@
       }
 
       function buildAssignDebugLog() {
-        const contact = { label: getSelectedContactReasonText() };
-        const outcome = { label: getSelectedInteractionOutcomeText() };
+        const submitLog = state.debugInfo.submitLog || "NO_SUBMIT_LOG";
+        const failed = submitLog.includes("ERROR::");
         return [
-          "START",
-          "ASSIGN_WRAPUP_CODE_TO_INTERACTION",
+          new Date().toISOString(),
           `version::${APP_VERSION || "(blank)"}`,
-          `conversationId::${context.conversationId || "(blank)"}`,
-          `agentParticipantId::${context.participantId || "(blank)"}`,
-          `agentCommunicationId::${context.communicationId || "(blank)"}`,
-          `inquiry::${contact.label || "(blank)"}`,
-          `wrapupName::${outcome.label || "(blank)"}`,
-          `combinedWrapupCodeName::${state.debugInfo.wrapupCodeName || "(blank)"}`,
+          "stage::PROSPECT_SUBMIT",
+          `status::${failed ? "FAILED" : "IN_PROGRESS_OR_SUCCESS"}`,
+          `selectedAccountOrCard::${getSelectedCardAccount().value || "(blank)"}`,
+          `type::${getSelectedTypeLabel() || "(blank)"}`,
+          `contactReason::${getSelectedContactReasonText() || "(blank)"}`,
+          `interactionOutcome::${getSelectedInteractionOutcomeText() || "(blank)"}`,
+          `wrapupCodeName::${state.debugInfo.wrapupCodeName || "(blank)"}`,
           `wrapupCodeId::${state.debugInfo.wrapupCodeId || "(blank)"}`,
           `wrapupCreated::${state.debugInfo.wrapupCreated || "(blank)"}`,
-          state.debugInfo.submitLog || "NO_SUBMIT_LOG"
+          submitLog
         ].join(" ==> ");
       }
 

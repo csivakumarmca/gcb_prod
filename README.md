@@ -725,3 +725,140 @@ Versions:
 - ChatMonitor UI: `v1.2.37`
 - Prospects: `Prospects_v3.24`
 - Cache: `172278`
+
+
+## v1.7.2.79-participant-logging-standard
+
+### Removed selected field
+
+```text
+Agent_Prospect_Selected_AccountOrCard_Type
+```
+
+The selected Card No / Account outputs are now only:
+
+```text
+Agent_Prospect_Selected_AccountOrCard_Id
+Agent_Prospect_Selected_AccountOrCard_Display
+```
+
+### Participant logging standard
+
+All participant log attributes introduced or renamed in this release follow:
+
+```text
+AFT_GCB_<PageOrFunctionality>_Logs_<Meaning>
+```
+
+Prospects:
+
+```text
+AFT_GCB_Prospects_Logs_SearchDropdown
+AFT_GCB_Prospects_Logs_AssignWrapup
+AFT_GCB_Prospects_Logs_LastStep
+AFT_GCB_Prospects_Logs_LastStatus
+AFT_GCB_Prospects_Logs_LastTime
+AFT_GCB_Prospects_Logs_LastTrace
+```
+
+ChatMonitor:
+
+```text
+AFT_GCB_ChatMonitor_Logs_LastStep
+AFT_GCB_ChatMonitor_Logs_LastStatus
+AFT_GCB_ChatMonitor_Logs_LastTime
+AFT_GCB_ChatMonitor_Logs_LastTrace
+```
+
+HoldResume:
+
+```text
+AFT_GCB_HoldResume_Logs_LastStep
+AFT_GCB_HoldResume_Logs_LastStatus
+AFT_GCB_HoldResume_Logs_LastTime
+AFT_GCB_HoldResume_Logs_LastTrace
+AFT_GCB_HoldResume_Logs_LastError
+```
+
+HoldTimer:
+
+```text
+AFT_GCB_HoldTimer_Logs_LastStep
+AFT_GCB_HoldTimer_Logs_LastStatus
+AFT_GCB_HoldTimer_Logs_LastTime
+AFT_GCB_HoldTimer_Logs_LastTrace
+AFT_GCB_HoldTimer_Logs_LastError
+```
+
+Index and MonitorWake retain browser diagnostic logging. They do not write business execution logs to participant data because they are runtime/helper pages rather than agent business actions.
+
+Versions:
+
+- GCB: `v1.7.2.79-participant-logging-standard`
+- ChatMonitor UI: `v1.2.38`
+- Prospects: `Prospects_v3.25`
+- Cache: `172279`
+
+
+## v1.7.2.80-single-participant-log-per-page
+
+Participant logging is consolidated to one attribute per page/functionality:
+
+```text
+AFT_GCB_Prospects_Logs
+AFT_GCB_ChatMonitor_Logs
+AFT_GCB_HoldResume_Logs
+AFT_GCB_HoldTimer_Logs
+```
+
+Each value contains the timestamp, step, status, trace, and error details in one string.
+
+Removed separate log attributes:
+
+```text
+*_Logs_LastStep
+*_Logs_LastStatus
+*_Logs_LastTime
+*_Logs_LastTrace
+*_Logs_LastError
+```
+
+Versions:
+
+- GCB: `v1.7.2.80-single-participant-log-per-page`
+- ChatMonitor UI: `v1.2.39`
+- Prospects: `Prospects_v3.26`
+- Cache: `172280`
+
+
+## v1.7.2.81-meaningful-participant-logs
+
+One participant log attribute remains per operational page:
+
+```text
+AFT_GCB_Prospects_Logs
+AFT_GCB_ChatMonitor_Logs
+AFT_GCB_HoldResume_Logs
+AFT_GCB_HoldTimer_Logs
+```
+
+Only useful post-disposal evidence is stored:
+
+```text
+selected business values
+wrap-up found/created/assigned result
+participant-data save result
+message API success/failure
+retry status and retry delay
+validation block
+final success/failure
+```
+
+Basic page-load and UI-only events are intentionally excluded.
+
+Versions:
+
+- GCB: `v1.7.2.81-meaningful-participant-logs`
+- ChatMonitor UI: `v1.2.40`
+- Prospects: `Prospects_v3.27`
+- Cache: `172281`
