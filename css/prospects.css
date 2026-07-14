@@ -1,7 +1,8 @@
 /*
- * Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
- * Purpose: Styles the Prospects contact reason and interaction outcome selection page.
- *          Maintains the compact Genesys Agent Script layout for search, reset, and submit actions.
+ * Author: Sivakumar Chandrahasu
+ * Purpose: Prospects page styling for Customer Details and Service Classification.
+ * Release: Prospects_v3.20
+ * Note: Extracted from the approved inline design; visual behavior is unchanged.
  */
 * {
         box-sizing: border-box;
@@ -14,7 +15,7 @@
 
       body {
         margin: 0;
-        padding: 8px;
+        padding: 4px;
         background: #ffffff;
         color: #143242;
         font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -240,6 +241,97 @@
         justify-content: center;
         gap: 10px;
         margin-top: 10px;
+      }
+
+
+      .customer-details-section {
+        width: 100%;
+        margin: 0 0 8px;
+        background: #ffffff;
+      }
+
+      .section-title-bar {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        background: #00728f;
+        color: #ffffff;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .customer-details-frame {
+        margin-top: 6px;
+        border: 1px solid #b9ccd7;
+        background: #f8fbfc;
+        padding: 7px 9px 9px;
+      }
+
+      .customer-details-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 15px;
+        row-gap: 9px;
+      }
+
+      .customer-detail-field {
+        min-width: 0;
+      }
+
+      .customer-detail-field .field-label {
+        display: block;
+        margin: 0 0 5px;
+        color: #006d8f;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1.15;
+      }
+
+      .customer-detail-input,
+      .customer-detail-select {
+        display: block;
+        width: 100%;
+        height: 31px;
+        min-height: 31px;
+        box-sizing: border-box;
+        border: 1px solid #b9b9b9;
+        border-radius: 3px;
+        padding: 4px 7px;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-size: 12px;
+        line-height: 20px;
+        color: #222222;
+      }
+
+      .customer-detail-input {
+        background: #eeeeee;
+      }
+
+      .customer-detail-select {
+        background: #ffffff;
+        padding-right: 28px;
+      }
+
+      .service-classification-section {
+        width: 100%;
+        margin: 0;
+      }
+
+      .service-classification-body {
+        margin-top: 6px;
+        border: 1px solid #b9ccd7;
+        background: #f8fbfc;
+        padding: 8px 12px 10px;
+      }
+
+      @media (max-width: 760px) {
+        .customer-details-grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       .runtime-button {

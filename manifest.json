@@ -1,7 +1,7 @@
 {
   "projectShortName": "RAKBANK GCB",
   "projectFullName": "RAKBANK Genesys Context Bridge",
-  "version": "v1.7.2.73-customer-details-layout-fix",
+  "version": "v1.7.2.74-prospects-external-css",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -48,7 +48,8 @@
     "v1.7.2.70 clarifies and preserves the independent notification reconnect policy: three reconnect attempts per cycle at 2s, 5s, and 10s, followed by a five-minute cooldown, then a new reconnect cycle. This is separate from the maximum-three-attempt standard Genesys REST API policy. Additional cycle/attempt diagnostics were added; joined/greeting, monitorwake fallback, duplicate controls, OAuth/MFA, Hold/Resume, and Prospects behavior are unchanged.",
     "v1.7.2.71 reduces the one-time MonitorWake page-load fallback delay from 4 seconds to 2 seconds. This speeds up Joined/Greeting delivery when the hidden ChatMonitor has just started, while preserving the same duplicate locks, participant-data sent keys, notification-first behavior, and existing Agent/Transfer/Supervisor/language rules. No retry, reconnect, Hold/Resume, Prospects, or OAuth/MFA logic changed.",
     "DEV v1.7.2.72 moves the complete approved Customer Details section into prospects.html. Customer Name, Customer Type, and Mobile Number are read-only. Card No / Account is selected inside HTML. On Submit, the selected value is stored in participant data under pia_ddl_Selected_AccountNumber and Prospects/Agent selected CardAccount attributes before the existing wrap-up assignment flow completes. The production package is unchanged.",
-    "DEV v1.7.2.73 separates Customer Details and Service Classification as top-level HTML sections and adjusts font sizes, field heights, spacing, padding, borders, and two-column proportions to match the previously approved Agent Script design. No data or submit logic changed."
+    "DEV v1.7.2.73 separates Customer Details and Service Classification as top-level HTML sections and adjusts font sizes, field heights, spacing, padding, borders, and two-column proportions to match the previously approved Agent Script design. No data or submit logic changed.",
+    "DEV v1.7.2.74 moves the approved Prospects CSS from the inline HTML style block to css/prospects.css. The Customer Details and Service Classification design is unchanged. No participant-data, dropdown, wrap-up, Submit, ChatMonitor, Hold/Resume, or notification logic changed."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -61,5 +62,5 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.72-customer-details-html"
+  "sourceBaseline": "v1.7.2.73-customer-details-layout-fix"
 }

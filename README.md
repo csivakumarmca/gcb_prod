@@ -552,3 +552,20 @@ The PROD package remains unchanged.
 Versions: GCB `v1.7.2.73-customer-details-layout-fix`, ChatMonitor `v1.2.32`, Prospects `Prospects_v3.17`, cache `172273`.
 
 Important: HTML cannot render outside its Genesys Web Page component. The Prospects web component must cover the combined Customer Details + Service Classification area. Remove or hide the old Agent Script Customer Details fields and the old Service Classification header to avoid duplication.
+
+
+## v1.7.2.74-prospects-external-css
+
+Prospects CSS organization update:
+
+- Approved Prospects styling moved from inline `<style>` to `css/prospects.css`.
+- `prospects.html` now loads `./css/prospects.css?v=172274`.
+- Customer Details and Service Classification appearance is unchanged.
+- No functional or business-logic changes.
+
+Versions:
+
+- GCB: `v1.7.2.74-prospects-external-css`
+- ChatMonitor UI: `v1.2.33`
+- Prospects: `Prospects_v3.20`
+- Cache: `172274`
