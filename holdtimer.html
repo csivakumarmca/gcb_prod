@@ -341,7 +341,7 @@
           ];
           if(errorText) logParts.push("ERROR::" + safe(errorText));
           const attributes={
-            AFT_GCB_HoldTimer_Logs:logParts.join(" ==> ").slice(0,4000)
+            AFT_GCB_Logs_HoldTimer:logParts.join(" ==> ").slice(0,4000)
           };
           const endpoint=API_BASE + "/api/v2/conversations/" + encodeURIComponent(CONFIG.conversationId) +
             "/participants/" + encodeURIComponent(participantId) + "/attributes";

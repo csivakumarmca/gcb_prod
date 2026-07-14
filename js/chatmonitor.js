@@ -4,7 +4,7 @@
  *          Uses communication-leg send keys, runtime memory, localStorage, and participant data duplicate checks.
  *          Maintains support/admin dashboard status and exportable logs.
  */
-const APP_VERSION = 'v1.2.41';
+const APP_VERSION = 'v1.2.42';
 let currentUser = null;
 let channel = null;
 let notifySocket = null;
@@ -1689,7 +1689,7 @@ async function reserveCrossTabSendLock(rec, key, msgType){
     AFT_GCB_SendLockOwner:owner,
     AFT_GCB_SendLockMessageType:msgType,
     AFT_GCB_SendLockTime:new Date().toISOString(),
-    AFT_GCB_ChatMonitor_Logs:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::IN_PROGRESS ==> messageType::${msgType} ==> ${participantApiRetrySummary()}`
+    AFT_GCB_Logs_ChatMonitor:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::IN_PROGRESS ==> messageType::${msgType} ==> ${participantApiRetrySummary()}`
   };
   await api(`/api/v2/conversations/${encodeURIComponent(rec.conversationId)}/participants/${encodeURIComponent(rec.customerParticipantId)}/attributes`,{
     method:'PATCH',body:JSON.stringify({attributes})
@@ -1724,7 +1724,7 @@ async function updateCustomerParticipantAttributes(rec, key, decision){
     AFT_GCB_LastJoinedSentName: rec.agentName || '',
     AFT_GCB_LastJoinedSentRoleMatch: decision.supervisorRole ? 'Supervisor' : 'Agent',
     AFT_GCB_LastJoinedSentTime: new Date().toISOString(),
-    AFT_GCB_ChatMonitor_Logs:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::SUCCESS ==> messageType::${decision.messageType || 'MESSAGE'} ==> participantData::UPDATED ==> ${participantApiRetrySummary()}`,
+    AFT_GCB_Logs_ChatMonitor:`${new Date().toISOString()} ==> version::${APP_VERSION} ==> stage::MESSAGE_SEND ==> status::SUCCESS ==> messageType::${decision.messageType || 'MESSAGE'} ==> participantData::UPDATED ==> ${participantApiRetrySummary()}`,
     AFT_GCB_SendLockKey:'',
     AFT_GCB_SendLockOwner:'',
     AFT_GCB_SendLockMessageType:'',

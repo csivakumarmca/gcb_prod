@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172282" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172283" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.28";
+      const DEFAULT_APP_VERSION = "Prospects_v3.29";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -138,8 +138,8 @@
       const GENESYS_REGION = getParam("region") || getParam("gcTargetEnv") || sessionStorage.getItem(STORAGE_REGION) || DEFAULT_GENESYS_REGION;
       const LOGIN_BASE = `https://login.${GENESYS_REGION}`;
       const API_BASE = `https://api.${GENESYS_REGION}`;
-      const SEARCH_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Prospects_Logs";
-      const ASSIGN_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Prospects_Logs";
+      const SEARCH_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Logs_Prospects";
+      const ASSIGN_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Logs_Prospects";
       const DEBUG_ATTRIBUTE_MAX_LENGTH = 20000;
       const draftKey = `RAK_PROSPECTS_DRAFT_${context.conversationId}_${context.communicationId}`;
       const submitKey = `RAK_PROSPECTS_SUBMITTED_${context.conversationId}_${context.communicationId}`;

@@ -753,41 +753,41 @@ AFT_GCB_<PageOrFunctionality>_Logs_<Meaning>
 Prospects:
 
 ```text
-AFT_GCB_Prospects_Logs_SearchDropdown
-AFT_GCB_Prospects_Logs_AssignWrapup
-AFT_GCB_Prospects_Logs_LastStep
-AFT_GCB_Prospects_Logs_LastStatus
-AFT_GCB_Prospects_Logs_LastTime
-AFT_GCB_Prospects_Logs_LastTrace
+AFT_GCB_Logs_Prospects_SearchDropdown
+AFT_GCB_Logs_Prospects_AssignWrapup
+AFT_GCB_Logs_Prospects_LastStep
+AFT_GCB_Logs_Prospects_LastStatus
+AFT_GCB_Logs_Prospects_LastTime
+AFT_GCB_Logs_Prospects_LastTrace
 ```
 
 ChatMonitor:
 
 ```text
-AFT_GCB_ChatMonitor_Logs_LastStep
-AFT_GCB_ChatMonitor_Logs_LastStatus
-AFT_GCB_ChatMonitor_Logs_LastTime
-AFT_GCB_ChatMonitor_Logs_LastTrace
+AFT_GCB_Logs_ChatMonitor_LastStep
+AFT_GCB_Logs_ChatMonitor_LastStatus
+AFT_GCB_Logs_ChatMonitor_LastTime
+AFT_GCB_Logs_ChatMonitor_LastTrace
 ```
 
 HoldResume:
 
 ```text
-AFT_GCB_HoldResume_Logs_LastStep
-AFT_GCB_HoldResume_Logs_LastStatus
-AFT_GCB_HoldResume_Logs_LastTime
-AFT_GCB_HoldResume_Logs_LastTrace
-AFT_GCB_HoldResume_Logs_LastError
+AFT_GCB_Logs_HoldResume_LastStep
+AFT_GCB_Logs_HoldResume_LastStatus
+AFT_GCB_Logs_HoldResume_LastTime
+AFT_GCB_Logs_HoldResume_LastTrace
+AFT_GCB_Logs_HoldResume_LastError
 ```
 
 HoldTimer:
 
 ```text
-AFT_GCB_HoldTimer_Logs_LastStep
-AFT_GCB_HoldTimer_Logs_LastStatus
-AFT_GCB_HoldTimer_Logs_LastTime
-AFT_GCB_HoldTimer_Logs_LastTrace
-AFT_GCB_HoldTimer_Logs_LastError
+AFT_GCB_Logs_HoldTimer_LastStep
+AFT_GCB_Logs_HoldTimer_LastStatus
+AFT_GCB_Logs_HoldTimer_LastTime
+AFT_GCB_Logs_HoldTimer_LastTrace
+AFT_GCB_Logs_HoldTimer_LastError
 ```
 
 Index and MonitorWake retain browser diagnostic logging. They do not write business execution logs to participant data because they are runtime/helper pages rather than agent business actions.
@@ -805,10 +805,10 @@ Versions:
 Participant logging is consolidated to one attribute per page/functionality:
 
 ```text
-AFT_GCB_Prospects_Logs
-AFT_GCB_ChatMonitor_Logs
-AFT_GCB_HoldResume_Logs
-AFT_GCB_HoldTimer_Logs
+AFT_GCB_Logs_Prospects
+AFT_GCB_Logs_ChatMonitor
+AFT_GCB_Logs_HoldResume
+AFT_GCB_Logs_HoldTimer
 ```
 
 Each value contains the timestamp, step, status, trace, and error details in one string.
@@ -836,10 +836,10 @@ Versions:
 One participant log attribute remains per operational page:
 
 ```text
-AFT_GCB_Prospects_Logs
-AFT_GCB_ChatMonitor_Logs
-AFT_GCB_HoldResume_Logs
-AFT_GCB_HoldTimer_Logs
+AFT_GCB_Logs_Prospects
+AFT_GCB_Logs_ChatMonitor
+AFT_GCB_Logs_HoldResume
+AFT_GCB_Logs_HoldTimer
 ```
 
 Only useful post-disposal evidence is stored:
@@ -885,3 +885,29 @@ Versions:
 - ChatMonitor UI: `v1.2.41`
 - Prospects: `Prospects_v3.28`
 - Cache: `172282`
+
+
+## v1.7.2.83-logs-prefix-standard
+
+Participant log attributes now use the common searchable prefix:
+
+```text
+AFT_GCB_Logs_Prospects
+AFT_GCB_Logs_ChatMonitor
+AFT_GCB_Logs_HoldResume
+AFT_GCB_Logs_HoldTimer
+AFT_GCB_Logs_MonitorWake
+```
+
+This groups all log attributes together under:
+
+```text
+AFT_GCB_Logs_
+```
+
+Versions:
+
+- GCB: `v1.7.2.83-logs-prefix-standard`
+- ChatMonitor UI: `v1.2.42`
+- Prospects: `Prospects_v3.29`
+- Cache: `172283`

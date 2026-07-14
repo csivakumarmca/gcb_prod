@@ -1,7 +1,7 @@
 {
   "projectShortName": "RAKBANK GCB",
   "projectFullName": "RAKBANK Genesys Context Bridge",
-  "version": "v1.7.2.82-optional-card-account",
+  "version": "v1.7.2.83-logs-prefix-standard",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -55,9 +55,10 @@
     "DEV v1.7.2.77 standardizes all Prospects participant-data names. Agent-selected values now use the Agent_Prospect_Selected_ prefix. Old Agent_Selected_, Prospects_Selected_, Prospects_, SI_Prospect_Selected_, and pia_ddl_Selected_ output variables were removed from the Prospects Submit update. Prospects submission metadata now uses Agent_Prospect_ names. No dropdown, wrap-up, ChatMonitor, notification, Hold/Resume, or duplicate-control logic changed.",
     "DEV v1.7.2.78 changes the Prospects Card No / Account dropdown to two aligned participant-data lists: SI_Prospect_AccountOrCard_IdList and SI_Prospect_AccountOrCard_DisplayList. DisplayList is shown to the agent and the matching IdList value is stored. Selected outputs are Agent_Prospect_Selected_AccountOrCard_Id, Agent_Prospect_Selected_AccountOrCard_Display, and Agent_Prospect_Selected_AccountOrCard_Type.",
     "DEV v1.7.2.79 removes Agent_Prospect_Selected_AccountOrCard_Type. Participant log attributes are standardized under AFT_GCB_<Page>_Logs_<Meaning>. Prospects legacy AFT_DFN_LOG attributes were renamed. ChatMonitor adds log status to its existing participant-data lock/final update calls. HoldResume and HoldTimer write one non-blocking participant log update at action completion, validation block, or failure. Browser/console diagnostics remain unchanged.",
-    "DEV v1.7.2.80 consolidates participant logging to one attribute per page/functionality. Prospects uses AFT_GCB_Prospects_Logs, ChatMonitor uses AFT_GCB_ChatMonitor_Logs, HoldResume uses AFT_GCB_HoldResume_Logs, and HoldTimer uses AFT_GCB_HoldTimer_Logs. Separate LastStep/LastStatus/LastTime/LastTrace/LastError attributes were removed. Existing page execution traces are combined into the single log value.",
+    "DEV v1.7.2.80 consolidates participant logging to one attribute per page/functionality. Prospects uses AFT_GCB_Logs_Prospects, ChatMonitor uses AFT_GCB_Logs_ChatMonitor, HoldResume uses AFT_GCB_Logs_HoldResume, and HoldTimer uses AFT_GCB_Logs_HoldTimer. Separate LastStep/LastStatus/LastTime/LastTrace/LastError attributes were removed. Existing page execution traces are combined into the single log value.",
     "DEV v1.7.2.81 keeps one participant log attribute per page and records only useful post-disposal evidence. Prospects records dropdown load result and submit/wrap-up outcome. ChatMonitor records message type, final send result and accumulated API retries without additional participant PATCH calls for each retry. HoldResume and HoldTimer record action, validation/API outcome and final result. Basic page-load and UI-only events are excluded.",
-    "DEV v1.7.2.82 makes the Prospects Card No / Account field optional. Submit no longer blocks when no card/account is selected. When blank, the selected ID and display participant attributes are stored as empty strings and the page log records that the optional field was not selected. No other Prospects, logging, ChatMonitor, Hold/Resume, notification, retry, or wrap-up logic changed."
+    "DEV v1.7.2.82 makes the Prospects Card No / Account field optional. Submit no longer blocks when no card/account is selected. When blank, the selected ID and display participant attributes are stored as empty strings and the page log records that the optional field was not selected. No other Prospects, logging, ChatMonitor, Hold/Resume, notification, retry, or wrap-up logic changed.",
+    "DEV v1.7.2.83 standardizes participant log attribute names so all logs sort together under the AFT_GCB_Logs_ prefix. Final names are AFT_GCB_Logs_Prospects, AFT_GCB_Logs_ChatMonitor, AFT_GCB_Logs_HoldResume, AFT_GCB_Logs_HoldTimer, and AFT_GCB_Logs_MonitorWake where applicable. No business logic changed."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -70,5 +71,5 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.81-meaningful-participant-logs"
+  "sourceBaseline": "v1.7.2.82-optional-card-account"
 }
