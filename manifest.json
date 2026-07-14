@@ -1,7 +1,7 @@
 {
   "projectShortName": "AFT GCB",
   "projectFullName": "AFT Genesys Context Bridge",
-  "version": "v1.7.2.92-max-hold-attempts-index-warning",
+  "version": "v1.7.2.93-resume-limit-warning",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -67,7 +67,8 @@
     "DEV v1.7.2.89 corrects central status recovery. Maximum hold duration reached is now shown as Warning rather than Failed. A manual or automatic Resume immediately changes Hold/Resume status to Success and clears the warning. The Index Last Error calculation now ignores an older module error when a later success/recovery event exists for the same module, preventing resolved Prospects errors from continuing to display as current errors.",
     "DEV v1.7.2.90 refreshes the Index Hold / Resume status immediately when the maximum hold duration warning is set. Previously the warning was stored but the Index status row was not re-rendered until another event. Auto-resume success and failure now also refresh immediately. No Hold/Resume business logic, timers, messaging, Prospects, ChatMonitor, or duplicate logic changed.",
     "DEV v1.7.2.91 fixes repeated hold-cycle warning display. The Index now handles the HOLD_EXCEEDED BroadcastChannel event directly, so the warning appears even when the active Hold page changes the shared record status before the Index polling cycle reads it. HOLD_STARTED resets the Index status to Pending. Manual/automatic Resume resets the one-time notification marker, allowing the next hold cycle to alert again. No hold timer or message-send logic changed.",
-    "DEV v1.7.2.92 broadcasts MAX_ATTEMPTS_BLOCKED from holdresume.html and shows it immediately in the Index Hold / Resume status as a Warning. The warning includes current and maximum attempt counts when available. The Hold/Resume page also classifies this validation as Warning instead of Error. No hold-count validation, timer, message-send, retry, Prospects, or ChatMonitor logic changed."
+    "DEV v1.7.2.92 broadcasts MAX_ATTEMPTS_BLOCKED from holdresume.html and shows it immediately in the Index Hold / Resume status as a Warning. The warning includes current and maximum attempt counts when available. The Hold/Resume page also classifies this validation as Warning instead of Error. No hold-count validation, timer, message-send, retry, Prospects, or ChatMonitor logic changed.",
+    "DEV v1.7.2.93 includes currentHoldCount and maxHoldAttempts in shared Resume events. When the final allowed Hold is resumed, the Index displays a Warning confirming that Resume succeeded and that the maximum allowed Hold attempts have been reached. Earlier Resume cycles continue to display Success. Existing hold validation, count calculation, timer, message sending, Prospects, ChatMonitor, transfer, and duplicate-control logic remain unchanged."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -80,7 +81,7 @@
   },
   "environment": "DEVELOPMENT",
   "releaseTrack": "DEV",
-  "sourceBaseline": "v1.7.2.91-repeated-hold-warning-fix",
+  "sourceBaseline": "v1.7.2.92-max-hold-attempts-index-warning",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
   "customer": "RAKBANK"

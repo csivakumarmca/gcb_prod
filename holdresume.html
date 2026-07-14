@@ -1370,6 +1370,13 @@
       if (!record) return;
       const nowIso = new Date().toISOString();
       record.status = status;
+
+      // Include hold-attempt context in all shared status events.
+      // The Index uses this after Resume to show that the interaction has exhausted
+      // the allowed Hold attempts, without requiring a fourth blocked Hold click.
+      record.currentHoldCount = getEffectiveHoldCount();
+      record.maxHoldAttempts = CONFIG.maxHoldAttempts;
+
       // RESUME_IN_PROGRESS is also treated as resumeSent=true so the central monitor will not send another Resume
       // while a manual Resume or central Resume is already being processed.
       record.resumeSent = status === "RESUME_IN_PROGRESS" || status === "RESUMED_AUTO" || status === "RESUMED_MANUAL";

@@ -104,7 +104,7 @@
     (function () {
       "use strict";
 
-      const ROUTER_VERSION = "v1.7.2.92-max-hold-attempts-index-warning";
+      const ROUTER_VERSION = "v1.7.2.93-resume-limit-warning";
       const C = window.RakCommon;
       const Auth = window.RakAuth;
       const Api = window.GenesysApi;
@@ -413,17 +413,61 @@
                 }
                 renderStatusLines();
               } else if (type === "RESUMED_MANUAL") {
-                clearHoldAlertNotificationMarker(message.record);
+                const record = message.record || {};
+                const currentCount = Number(record.currentHoldCount || 0);
+                const maximumCount = Number(record.maxHoldAttempts || 0);
+                const limitReached = maximumCount > 0 && currentCount >= maximumCount;
+                const countText = currentCount > 0 && maximumCount > 0
+                  ? " (" + currentCount + " / " + maximumCount + ")"
+                  : "";
+
+                clearHoldAlertNotificationMarker(record);
+
                 if (window.GcbDebug) {
-                  window.GcbDebug.setStatus("holdResume", "success", "Chat resumed manually.");
-                  window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Manual Resume completed.");
+                  if (limitReached) {
+                    window.GcbDebug.setStatus(
+                      "holdResume",
+                      "warning",
+                      "Chat resumed successfully. You have already reached the maximum allowed hold attempts." + countText
+                    );
+                    window.GcbDebug.log(
+                      "INFO",
+                      "HOLD_RESUME_LIMIT_REACHED",
+                      "Manual Resume completed and maximum hold attempts reached." + countText
+                    );
+                  } else {
+                    window.GcbDebug.setStatus("holdResume", "success", "Chat resumed manually.");
+                    window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Manual Resume completed.");
+                  }
                 }
                 renderStatusLines();
               } else if (type === "RESUMED_AUTO") {
-                clearHoldAlertNotificationMarker(message.record);
+                const record = message.record || {};
+                const currentCount = Number(record.currentHoldCount || 0);
+                const maximumCount = Number(record.maxHoldAttempts || 0);
+                const limitReached = maximumCount > 0 && currentCount >= maximumCount;
+                const countText = currentCount > 0 && maximumCount > 0
+                  ? " (" + currentCount + " / " + maximumCount + ")"
+                  : "";
+
+                clearHoldAlertNotificationMarker(record);
+
                 if (window.GcbDebug) {
-                  window.GcbDebug.setStatus("holdResume", "success", "Chat resumed automatically.");
-                  window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Automatic Resume completed.");
+                  if (limitReached) {
+                    window.GcbDebug.setStatus(
+                      "holdResume",
+                      "warning",
+                      "Chat resumed successfully. You have already reached the maximum allowed hold attempts." + countText
+                    );
+                    window.GcbDebug.log(
+                      "INFO",
+                      "HOLD_RESUME_LIMIT_REACHED",
+                      "Automatic Resume completed and maximum hold attempts reached." + countText
+                    );
+                  } else {
+                    window.GcbDebug.setStatus("holdResume", "success", "Chat resumed automatically.");
+                    window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Automatic Resume completed.");
+                  }
                 }
                 renderStatusLines();
               } else if (type === "HOLD_STARTED") {

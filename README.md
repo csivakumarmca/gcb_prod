@@ -1144,3 +1144,25 @@ Versions:
 - ChatMonitor UI: `v1.2.51`
 - Prospects: `Prospects_v3.38`
 - Cache: `172292`
+
+
+## v1.7.2.93-resume-limit-warning
+
+Final allowed Resume status:
+
+```text
+Resume completed before limit
+→ Success - Chat resumed manually/automatically.
+
+Resume completed at maximum Hold attempts
+→ Warning - Chat resumed successfully. You have already reached the maximum allowed hold attempts. (3 / 3)
+```
+
+This removes the need for the agent to attempt a blocked fourth Hold before the Index shows that the limit is exhausted.
+
+Versions:
+
+- AFT GCB: `v1.7.2.93-resume-limit-warning`
+- ChatMonitor UI: `v1.2.52`
+- Prospects: `Prospects_v3.39`
+- Cache: `172293`
