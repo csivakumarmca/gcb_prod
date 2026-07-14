@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AFT GCB Monitor Wake</title>
+  <style>
+    html,body{margin:0;padding:0;background:transparent;font:12px Arial,sans-serif;color:#555}
+    #status{display:none}
+  </style>
+</head>
+<body>
+<div id="status">Publishing monitor wake request...</div>
+<script>
+(function(){
+  "use strict";
+
+  const WAKE_CHANNEL = "AFT_GCB_MONITOR_WAKE_V1";
+  const WAKE_EVENT_KEY = "AFT_GCB_MONITOR_WAKE_EVENT_V1";
+  const WAKE_LAST_KEY = "AFT_GCB_MONITOR_WAKE_LAST_V1";
+  const CONTEXTS_KEY = "AFT_GCB_INTERACTION_CONTEXTS_V1";
+  const MONITOR_LEADER_KEY = "AFT_GCB_MONITOR_LEADER_V1";
+  const RUNTIME_CONFIG_KEY = "AFT_GCB_RUNTIME_CONFIG_V1";
+  const MONITOR_AUTOSTART_DELAY_MS = 4500;
+  const MAX_CONTEXTS = 5;
+  const MAX_RUNTIME_CONFIG_CHECKS = 5;
+  let runtimeConfigCheckCount = 0;
+  const params = new URLSearchParams(location.search || "");
+
+  function value(name, legacyName){
+    return String(params.get(name) || (legacyName ? params.get(legacyName) : "") || "").trim();
+  }
+
+  function boolValue(name, fallback){
+    const raw = String(params.get(name) || "").trim().toLowerCase();
+    if (!raw) return !!fallback;
+    return ["true","1","yes","y"].includes(raw);
+  }
+
+  const request = {
+    type: "GCB_MONITOR_WAKE_REQUEST",
+    requestId: "wake-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10),
+    createdAt: new Date().toISOString(),
+    createdAtMs: Date.now(),
+    source: value("source") || "AgentScript",
+    conversationId: value("conversationId", "gcConversationId"),
+    agentParticipantId: value("agentParticipantId", "participantId"),
+    agentCommunicationId: value("agentCommunicationId", "communicationId"),
+    customerParticipantId: value("customerParticipantId"),
+    customerCommunicationId: value("customerCommunicationId"),
+    agentName: value("agentName"),
+    language: value("langTag") || value("language") || "",
+    forceStart: boolValue("forceStart", true),
+    version: value("version") || "MonitorWake_v1.3"
+  };
+
+  function saveInteractionContext(){
+    if (!request.conversationId) return;
+    try {
+      const raw = localStorage.getItem(CONTEXTS_KEY);
+      const map = raw ? JSON.parse(raw) : {};
+      const safeMap = map && typeof map === "object" && !Array.isArray(map) ? map : {};
+      const previous = safeMap[request.conversationId] || {};
+      safeMap[request.conversationId] = {
+        ...previous,
+        conversationId: request.conversationId,
+        agentParticipantId: request.agentParticipantId || previous.agentParticipantId || "",
+        agentCommunicationId: request.agentCommunicationId || previous.agentCommunicationId || "",
+        customerParticipantId: request.customerParticipantId || previous.customerParticipantId || "",
+        customerCommunicationId: request.customerCommunicationId || previous.customerCommunicationId || "",
+        agentName: request.agentName || previous.agentName || "",
+        language: request.language || previous.language || "",
+        updatedAt: request.createdAt,
+        source: "monitorwake.html"
+      };
+      const entries = Object.values(safeMap)
+        .filter(Boolean)
+        .sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0))
+        .slice(0,MAX_CONTEXTS);
+      const trimmed = {};
+      entries.forEach(item=>{ if(item && item.conversationId) trimmed[item.conversationId]=item; });
+      localStorage.setItem(CONTEXTS_KEY, JSON.stringify(trimmed));
+    } catch (_) {}
+  }
+
+  function publish(){
+    const event = {...request, publishedAtMs: Date.now()};
+    try {
+      localStorage.setItem(WAKE_LAST_KEY, JSON.stringify(event));
+      localStorage.setItem(WAKE_EVENT_KEY, JSON.stringify(event));
+      localStorage.removeItem(WAKE_EVENT_KEY);
+    } catch (_) {}
+
+    try {
+      if ("BroadcastChannel" in window) {
+        const channel = new BroadcastChannel(WAKE_CHANNEL);
+        channel.postMessage(event);
+        channel.close();
+      }
+    } catch (_) {}
+  }
+
+  function hasActiveMonitor(){
+    try{
+      const leader=JSON.parse(localStorage.getItem(MONITOR_LEADER_KEY)||"null");
+      return !!leader?.owner && Number(leader.expiresAt||0)>Date.now();
+    }catch(_){ return false; }
+  }
+
+  function readRuntimeConfiguration(){
+    try{
+      const value=JSON.parse(localStorage.getItem(RUNTIME_CONFIG_KEY)||"null");
+      if(!value || typeof value!=="object") return null;
+      return value;
+    }catch(_){ return null; }
+  }
+
+  function buildAutoStartUrl(){
+    const runtime=readRuntimeConfiguration()||{};
+    const next=new URLSearchParams();
+
+    // OAuth/environment ownership remains with the Interaction Widget URL.
+    [
+      "langTag",
+      "gcTargetEnv",
+      "gcHostOrigin",
+      "usePopupAuth",
+      "clientId",
+      "region"
+    ].forEach(function(name){
+      const value=String(runtime[name]||"").trim();
+      if(value) next.set(name,value);
+    });
+
+    // Current Agent Script interaction values override any stored values.
+    params.forEach(function(value,name){
+      if(name!=="v" && name!=="forceStart") next.set(name,value);
+    });
+
+    next.set("v","100000");
+    next.set("page","chatmonitor");
+    next.set("source","AgentScriptAutoStart");
+    next.set("routedFrom","monitorwake");
+    next.set("autoStarted","true");
+    return "index.html?" + next.toString();
+  }
+
+  function ensureMonitorLoaded(){
+    if(hasActiveMonitor()) return;
+    const runtime=readRuntimeConfiguration();
+    const required=["clientId","region","gcTargetEnv","gcHostOrigin"];
+    const missing=required.filter(function(name){ return !String(runtime?.[name]||"").trim(); });
+    if(missing.length){
+      runtimeConfigCheckCount+=1;
+      document.getElementById("status").textContent=
+        "Waiting for Interaction Widget runtime configuration: "+missing.join(", ");
+      if(runtimeConfigCheckCount<MAX_RUNTIME_CONFIG_CHECKS){
+        setTimeout(ensureMonitorLoaded,2000);
+      }
+      return;
+    }
+    location.replace(buildAutoStartUrl());
+  }
+
+  saveInteractionContext();
+  publish();
+  setTimeout(publish, 1000);
+  setTimeout(publish, 3000);
+  setTimeout(ensureMonitorLoaded, MONITOR_AUTOSTART_DELAY_MS);
+})();
+</script>
+</body>
+</html>

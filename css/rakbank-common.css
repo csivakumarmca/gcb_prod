@@ -1,0 +1,19 @@
+/*
+ * Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
+ * Purpose: Common visual styles shared by GCB pages.
+ *          Provides reusable card, layout, and status styling for embedded Genesys pages.
+ */
+/*
+ * RAKBANK Agent Assist Kit - Common CSS
+ * Purpose: shared visual tokens only. Page-specific layouts stay in their own CSS files.
+ */
+:root {
+  --rak-blue: #004982;
+  --rak-blue-2: #0059a8;
+  --rak-green: #00843d;
+  --rak-danger: #b00020;
+  --rak-warning: #a86200;
+  --rak-border: #cfd9e3;
+  --rak-page: #f4f6f8;
+  --rak-text: #001b3d;
+}

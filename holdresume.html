@@ -1,0 +1,2949 @@
+<!--
+  Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
+  Purpose: Visible Hold Summary page for the active chat interaction.
+           Shows hold count, hold time, recent segments, and long alert messages.
+           Can open directly and silently recover through index.html only when token is missing.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agent Hold Summary v1.7.2.25</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --rak-blue: #004982;
+      --rak-blue-2: #0059a8;
+      --rak-green: #00843d;
+      --rak-green-soft: #eafaf0;
+      --rak-blue-soft: #eef6ff;
+      --rak-border: #cfd9e3;
+      --rak-page: #f4f6f8;
+      --rak-text: #001b3d;
+      --rak-danger: #b00020;
+      --rak-warning: #a86200;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 0;
+      background: transparent;
+    }
+
+    body {
+      padding: 8px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--rak-text);
+      font-size: 12px;
+      overflow-x: hidden;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      background: transparent;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--rak-blue);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .info-dot {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--rak-blue);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rak-blue);
+      font-weight: 700;
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+
+    .action-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .hold-action-btn {
+      min-width: 120px;
+      height: 36px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--rak-green);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+    }
+
+    .hold-action-btn.resume {
+      background: var(--rak-blue-2);
+    }
+
+    .hold-action-btn:disabled {
+      background: #8a96a3;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .small-btn {
+      height: 30px;
+      border: 1px solid #b7c7d7;
+      background: #fff;
+      color: var(--rak-blue);
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+
+    .status-line {
+      display: none;
+      margin: 0 0 8px 0;
+      padding: 8px 10px;
+      border-radius: 3px;
+      border: 1px solid #cfe3ff;
+      background: #eef6ff;
+      color: var(--rak-blue);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status-line.success { display: block; border-color: #bee6cd; background: #eafaf0; color: #007036; }
+    .status-line.error { display: block; border-color: #f2b8c0; background: #fff0f2; color: var(--rak-danger); }
+    .status-line.warning { display: block; border-color: #f3d39a; background: #fff7e8; color: var(--rak-warning); }
+    .status-line.info { display: block; }
+
+    .limit-alert {
+      display: none;
+      border: 1px solid #f0b35d;
+      background: #fff7e8;
+      color: var(--rak-warning);
+      padding: 9px 12px;
+      margin: 8px 0 8px auto;
+      width: fit-content;
+      max-width: 62%;
+      min-width: 360px;
+      font-size: 12px;
+      line-height: 1.35;
+      border-radius: 0;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .limit-alert.show {
+      display: block;
+    }
+
+
+    @keyframes hrAlertBlink {
+      0%, 100% { box-shadow: 0 0 0 rgba(176,0,32,0); transform: translateZ(0); }
+      50% { box-shadow: 0 0 0 4px rgba(176,0,32,0.18); background: #ffe7eb; border-color: #b00020; color: #9b0000; }
+    }
+
+    .limit-alert.attention-blink {
+      animation: hrAlertBlink 0.9s ease-in-out infinite;
+    }
+
+    .limit-alert.warning {
+      border-color: #f3d39a;
+      background: #fff7e8;
+      color: var(--rak-warning);
+    }
+
+    .limit-alert.error {
+      border-color: #f0b35d;
+      background: #fff7e8;
+      color: var(--rak-warning);
+    }
+
+    .section {
+      border: 1px solid #b9d9c4;
+      background: #fff;
+      padding: 11px;
+      margin-bottom: 8px;
+    }
+
+    .section.overall {
+      border-color: #b7d4f2;
+    }
+
+    .grid-current {
+      display: grid;
+      grid-template-columns: 154px 1fr 1fr 1.55fr;
+      gap: 8px;
+      min-height: 162px;
+    }
+
+    .grid-overall {
+      display: grid;
+      grid-template-columns: 154px 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      min-height: 162px;
+    }
+
+    .side-card {
+      border: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .side-card.current {
+      background: var(--rak-green-soft);
+      color: var(--rak-green);
+    }
+
+    .side-card.overall {
+      background: #eef5fc;
+      color: var(--rak-blue-2);
+    }
+
+    .side-icon {
+      font-size: 26px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .side-title {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .metric-card {
+      border: 1px solid var(--rak-border);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .metric-card.limit-reached {
+      background: #f2a0b4;
+      border-color: #e58da4;
+    }
+
+    .metric-card.limit-reached .metric-label,
+    .metric-card.limit-reached .metric-sub {
+      color: #001b3d;
+    }
+
+    .metric-card.limit-reached .metric-value.green {
+      color: #007036;
+    }
+
+    .metric-icon {
+      height: 26px;
+      line-height: 26px;
+      font-size: 21px;
+      color: var(--rak-blue-2);
+      margin-bottom: 8px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #001b3d;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--rak-blue-2);
+      line-height: 1.15;
+    }
+
+    .metric-value.green {
+      color: var(--rak-green);
+    }
+
+    .metric-sub {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #4e5d6c;
+      line-height: 1.4;
+    }
+
+    .segments-card {
+      justify-content: center;
+    }
+
+    .segments-box {
+      width: 100%;
+      max-height: 64px;
+      overflow-y: auto;
+      border: 0;
+      margin-top: 10px;
+      padding: 2px 6px;
+      color: #25496d;
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: center;
+      word-break: break-word;
+    }
+
+
+
+
+
+    .recent-segments-card {
+      justify-content: center;
+      padding: 12px 14px;
+    }
+
+    .recent-segments-card .metric-icon {
+      margin-bottom: 6px;
+    }
+
+    .recent-segments-value {
+      width: 100%;
+      min-height: 42px;
+      max-height: 92px;
+      overflow-y: auto;
+      color: var(--rak-blue-2);
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 700;
+      text-align: center;
+      word-break: break-word;
+      padding: 2px 4px;
+    }
+
+    .recent-segments-value.empty {
+      color: #5d6c7a;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .timer-indicator-card {
+      position: relative;
+      padding: 12px 14px;
+    }
+
+    .timer-indicator-title {
+      color: #001b3d;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .timer-indicator-value {
+      color: var(--rak-blue-2);
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.05;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .timer-indicator-card.active .timer-indicator-value {
+      color: var(--rak-blue-2);
+    }
+
+    .timer-indicator-card.warning .timer-indicator-value {
+      color: #e69500;
+    }
+
+    .timer-indicator-status {
+      color: #25496d;
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 14px;
+    }
+
+    .timer-progress-wrap {
+      height: 14px;
+      width: calc(100% - 28px);
+      background: #eeeeee;
+      border: 1px solid #d9e3ee;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 7px 14px 8px 14px;
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #0a8f43;
+      border-radius: 999px;
+      transition: width 0.5s linear, background 0.3s ease;
+    }
+
+    .timer-indicator-card.active .timer-progress-fill {
+      background: #0a8f43;
+    }
+
+    .timer-indicator-card.danger .timer-progress-fill {
+      background: #c00000;
+    }
+
+    .timer-indicator-card.danger .timer-indicator-value {
+      color: #c00000;
+    }
+
+    .timer-indicator-card.warning .timer-progress-fill {
+      background: #e69500;
+    }
+
+    .timer-indicator-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #4d667e;
+      font-size: 10.5px;
+      padding: 0 12px;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .history-section {
+      border: 1px solid #b7d4f2;
+      background: #eaf4ff;
+      padding: 10px 11px;
+      display: grid;
+      grid-template-columns: 78px 250px 1fr;
+      gap: 12px;
+      align-items: center;
+      min-height: 88px;
+      margin-bottom: 0;
+    }
+
+    .history-icon {
+      text-align: center;
+      font-size: 25px;
+      color: var(--rak-blue-2);
+      font-weight: 700;
+    }
+
+    .history-title {
+      color: var(--rak-blue-2);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .history-sub {
+      color: #001b3d;
+      font-size: 12px;
+    }
+
+    .history-box {
+      min-height: 54px;
+      max-height: 72px;
+      background: #fff;
+      border: 1px solid #cfd9e3;
+      padding: 7px 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      white-space: normal;
+      line-height: 1.45;
+      color: #25496d;
+    }
+
+    .note {
+      display: none;
+      color: #263d55;
+      font-size: 12px;
+      margin: 2px 0 0 4px;
+    }
+
+    .debug-panel {
+      display: none;
+      margin-top: 14px;
+      padding: 22px 12px;
+      min-height: 260px;
+      max-height: 560px;
+      overflow: auto;
+      background: #fbfdff;
+      border: 1px dashed #9ebbd6;
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #003b64;
+    }
+
+    .timer-active .metric-value.green {
+      color: var(--rak-danger);
+    }
+
+    @media (max-width: 760px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .action-area { width: 100%; justify-content: flex-start; }
+      .grid-current,
+      .grid-overall,
+  
+
+    .timer-indicator-card {
+      position: relative;
+    }
+
+    .timer-indicator-title {
+      color: #001b3d;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .timer-indicator-value {
+      color: var(--rak-blue-2);
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.05;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .timer-indicator-card.active .timer-indicator-value {
+      color: var(--rak-blue-2);
+    }
+
+    .timer-indicator-card.warning .timer-indicator-value {
+      color: #e69500;
+    }
+
+    .timer-indicator-status {
+      color: #25496d;
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 14px;
+    }
+
+    .timer-progress-wrap {
+      height: 14px;
+      width: calc(100% - 28px);
+      background: #eeeeee;
+      border: 1px solid #d9e3ee;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 7px 14px 8px 14px;
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #0a8f43;
+      border-radius: 999px;
+      transition: width 0.5s linear, background 0.3s ease;
+    }
+
+    .timer-indicator-card.active .timer-progress-fill {
+      background: #0a8f43;
+    }
+
+    .timer-indicator-card.danger .timer-progress-fill {
+      background: #c00000;
+    }
+
+    .timer-indicator-card.danger .timer-indicator-value {
+      color: #c00000;
+    }
+
+    .timer-indicator-card.warning .timer-progress-fill {
+      background: #e69500;
+    }
+
+    .timer-indicator-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #4d667e;
+      font-size: 10.5px;
+      padding: 0 12px;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .history-section { grid-template-columns: 1fr; }
+      .side-card { min-height: 120px; }
+      .history-box { white-space: normal; height: auto; min-height: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Agent Hold Summary</h1>
+        <span class="info-dot" title="Hold times are displayed in HH:MM:SS format.">i</span>
+      </div>
+      <div class="action-area">
+        <!-- Hold/Resume and Refresh buttons removed from the Hold Info page.
+             Hold/Resume is controlled from the Agent Script button using externalAction=HOLD/RESUME. -->
+        <button id="debugBtn" class="small-btn" type="button" style="display:none;">Debug</button>
+      </div>
+    </div>
+
+    <div id="statusLine" class="status-line info">Loading hold details...</div>
+
+    <div id="limitAlert" class="limit-alert"></div>
+
+    <div class="section current">
+      <div class="grid-current">
+        <div class="side-card current">
+          <div class="side-icon">🎧</div>
+          <div class="side-title">Current<br/>Session</div>
+        </div>
+
+        <div id="currentHoldCountCard" class="metric-card">
+          <div class="metric-label">Hold Count</div>
+          <div class="metric-value green"><span id="currentHoldCount">0</span> / <span id="maxHoldAttempts">3</span></div>
+          <div class="metric-sub">✓ Max Hold Attempts: <span id="maxHoldAttemptsSub">3</span></div>
+        </div>
+
+        <div id="holdTimeCard" class="metric-card">
+          <div class="metric-icon">◷</div>
+          <div class="metric-label">Hold Time</div>
+          <div id="currentHoldTime" class="metric-value green">00:00:00</div>
+          <div id="timerSubText" class="metric-sub">Current session total</div>
+        </div>
+
+        <div id="recentSegmentsCard" class="metric-card recent-segments-card">
+          <div class="metric-icon">⌛</div>
+          <div class="metric-label">Recent Hold Segments</div>
+          <div id="currentSegments" class="recent-segments-value">No completed hold segments yet.</div>
+          <div class="metric-sub">Current session</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section overall">
+      <div class="grid-overall">
+        <div class="side-card overall">
+          <div class="side-icon">💬</div>
+          <div class="side-title">Overall<br/>Conversation</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Total Hold Count</div>
+          <div id="totalHoldCount" class="metric-value">0</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">◷</div>
+          <div class="metric-label">Total Hold Time</div>
+          <div id="totalHoldTime" class="metric-value">00:00:00</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">📊</div>
+          <div class="metric-label">Average Hold Time</div>
+          <div id="averageHoldTime" class="metric-value">00:00:00</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">⌛</div>
+          <div class="metric-label">Longest Hold Time</div>
+          <div id="longestHoldTime" class="metric-value">00:00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <div class="history-icon">☷</div>
+      <div>
+        <div class="history-title">Hold History Details</div>
+        <div class="history-sub">All hold segment durations for this conversation.</div>
+      </div>
+      <div id="holdHistory" class="history-box"></div>
+    </div>
+
+    <div class="note">ⓘ Hold times are displayed in HH:MM:SS format.</div>
+    <div id="debugPanel" class="debug-panel"></div>
+  </div>
+
+  <script src="./js/gcb-debug.js"></script>
+  <script>
+    /************************************************************
+     * HOLD RESUME PAGE - v1.7.2.20
+     * Uses existing Genesys client-side send-message approach.
+     * v1.7.2.9 release note:
+     * - Browser notification/taskbar attention kept as optional best-effort alert.
+     * - If permission is granted, notification can appear.
+     * - If permission is denied/blocked, Hold/Resume continues and falls back to alert blink, title blink, and sound.
+     ************************************************************/
+    const HR_VERSION = "v1.0.8-hold-attempt-default-fix";
+
+    const ORIGINAL_DOCUMENT_TITLE = document.title;
+    let attentionTitleInterval = null;
+    let attentionBlinkTimeout = null;
+    const PARAMS = new URLSearchParams(window.location.search);
+    const REDIRECT_URI = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "/index.html");
+
+    const DEFAULT_REGION = "mypurecloud.ie";
+    const DEFAULT_CLIENT_ID = "";
+    const STORAGE_CLIENT_ID = "gcb_hr_clientId";
+    const STORAGE_REGION = "gcb_hr_region";
+    const STORAGE_ORIGINAL_URL = "gcb_hr_originalUrl";
+    const STORAGE_TIMER_PREFIX = "gcb_hr_timer_";
+    const STORAGE_BUTTON_PREFIX = "gcb_hr_button_";
+    const STORAGE_SUMMARY_PREFIX = "gcb_hr_summary_";
+    const STORAGE_ATTEMPT_PREFIX = "gcb_hr_attempt_";
+    const STORAGE_AUTH_RECOVERY_PREFIX = "gcb_hr_auth_recovery_";
+    const GCB_ACTIVE_HOLDS_KEY = "GCB_ACTIVE_HOLDS_V1";
+    const GCB_HOLD_CHANNEL = "GCB_HOLD_MONITOR";
+    const GCB_HOLD_PAGE_ID = "holdresume-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    const GCB_HOLD_HEARTBEAT_STALE_MS = 5000;
+
+    let isProcessing = false;
+    let isInitialSummaryLoading = true;
+    let isOnHold = false;
+    let holdTimerInterval = null;
+    let activeTimer = null;
+    let latestSummary = null;
+    let debugLines = [];
+    let persistentLimitAlert = { message: "", type: "" };
+
+    function safeString(value) {
+      if (value === null || value === undefined) return "";
+      return String(value).trim();
+    }
+
+    function getParam(name, fallback) {
+      const value = safeString(PARAMS.get(name));
+      if (!value || (value.includes("{{") && value.includes("}}"))) return fallback || "";
+      return value;
+    }
+
+    function getBoolParam(name, defaultValue) {
+      const text = safeString(getParam(name, "")).toLowerCase();
+      if (!text) return defaultValue;
+      if (["true", "1", "yes", "y"].includes(text)) return true;
+      if (["false", "0", "no", "n"].includes(text)) return false;
+      return defaultValue;
+    }
+
+    function getNumberParam(name, defaultValue) {
+      const num = Number(getParam(name, ""));
+      if (!Number.isFinite(num)) return defaultValue;
+      return Math.max(0, Math.floor(num));
+    }
+
+    function sanitizeKey(value) {
+      return safeString(value).replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function addDebug(step, message) {
+      const line = "[" + new Date().toLocaleString() + "] " + step + " ==> " + safeString(message);
+      debugLines.push(line);
+      if (debugLines.length > 400) debugLines.shift();
+      if (CONFIG.visibleDebug) renderDebugPanel();
+      console.log(line);
+    }
+
+    function getTokenStatusForDebug() {
+      try {
+        return getAccessToken() ? "AVAILABLE" : "MISSING";
+      } catch (_) {
+        return "MISSING";
+      }
+    }
+
+    function getTimerStatusForDebug() {
+      if (!activeTimer) return "NOT_ACTIVE";
+      const remaining = Math.max(0, Math.ceil((Number(activeTimer.expiresAt || 0) - Date.now()) / 1000));
+      return "ACTIVE | remainingSeconds=" + remaining + " | maxHoldTime=" + CONFIG.maxHoldTime;
+    }
+
+    function getDebugParametersText() {
+      const lines = [];
+      lines.push("Debug Parameters");
+      lines.push("");
+      lines.push("conversationId: " + (CONFIG.conversationId || "[missing]"));
+      lines.push("communicationId: " + (CONFIG.communicationId || "[missing]"));
+      lines.push("participantId: " + (CONFIG.participantId || "[missing]"));
+      lines.push("agentParticipantId: " + (CONFIG.agentParticipantId || "[missing]"));
+      lines.push("customerCommunicationId: " + (CONFIG.customerCommunicationId || "[missing]"));
+      lines.push("agentCommunicationId: " + (CONFIG.agentCommunicationId || "[missing]"));
+      lines.push("region: " + (CONFIG.region || "[missing]"));
+      lines.push("clientId: " + (CONFIG.clientId || "[missing]"));
+      lines.push("holdMessageText: " + (CONFIG.holdMessageText || "[missing]"));
+      lines.push("resumeMessageText: " + (CONFIG.resumeMessageText || "[missing]"));
+      lines.push("maxHoldAttempts: " + CONFIG.maxHoldAttempts);
+      lines.push("maxHoldTime: " + CONFIG.maxHoldTime + " seconds");
+      lines.push("autoResumeEnabled: " + CONFIG.autoResumeEnabled);
+      lines.push("holdDetailsApiUrl: " + (CONFIG.holdDetailsApiUrl || "[not configured]"));
+      lines.push("currentAgentInteractionStartTime: " + (CONFIG.currentAgentInteractionStartTime || "[not passed]"));
+      lines.push("isCustomerBasedHoldCalculation: " + CONFIG.isCustomerBasedHoldCalculation);
+      lines.push("debug: " + CONFIG.debug);
+      lines.push("alertBlinkEnabled: " + CONFIG.alertBlinkEnabled);
+      lines.push("alertSoundEnabled: " + CONFIG.alertSoundEnabled);
+      lines.push("browserNotificationEnabled: " + CONFIG.browserNotificationEnabled);
+      lines.push("taskbarBlinkEnabled: " + CONFIG.taskbarBlinkEnabled);
+      lines.push("notificationPermission: " + getNotificationPermissionStatus());
+      lines.push("source: " + CONFIG.source);
+      lines.push("");
+      lines.push("Runtime Status");
+      lines.push("buttonState: " + (isOnHold ? "RESUME" : "HOLD"));
+      lines.push("isProcessing: " + isProcessing);
+      lines.push("initialSummaryLoading: " + isInitialSummaryLoading);
+      lines.push("timerStatus: " + getTimerStatusForDebug());
+      lines.push("oauthToken: " + getTokenStatusForDebug());
+      lines.push("apiBase: " + API_BASE);
+      lines.push("redirectUri: " + REDIRECT_URI);
+      lines.push("");
+      lines.push("Current Summary");
+      lines.push("currentHoldCount: " + (latestSummary ? latestSummary.currentHoldCount : "[not loaded]"));
+      lines.push("currentHoldTime: " + (latestSummary ? latestSummary.currentHoldTime : "[not loaded]"));
+      lines.push("totalHoldCount: " + (latestSummary ? latestSummary.totalHoldCount : "[not loaded]"));
+      lines.push("totalHoldTime: " + (latestSummary ? latestSummary.totalHoldTime : "[not loaded]"));
+      lines.push("averageHoldTime: " + (latestSummary ? latestSummary.averageHoldTime : "[not loaded]"));
+      lines.push("longestHoldTime: " + (latestSummary ? latestSummary.longestHoldTime : "[not loaded]"));
+      lines.push("holdHistory: " + (latestSummary && latestSummary.holdHistory ? latestSummary.holdHistory : "[none]"));
+      lines.push("");
+      lines.push("Debug Logs");
+      lines.push(debugLines.length ? debugLines.join("\n") : "[no logs yet]");
+      return lines.join("\n");
+    }
+
+    function renderDebugPanel() {
+      const panel = document.getElementById("debugPanel");
+      if (!panel || !CONFIG.visibleDebug) return;
+      panel.style.display = "block";
+      panel.textContent = getDebugParametersText();
+    }
+
+
+    function showPersistentAlert(message, type) {
+      persistentLimitAlert = { message: safeString(message), type: type || "error" };
+      const el = document.getElementById("limitAlert");
+      if (!el) return;
+      if (!persistentLimitAlert.message) {
+        el.className = "limit-alert";
+        el.textContent = "";
+        return;
+      }
+      el.className = "limit-alert show " + (persistentLimitAlert.type || "error");
+      el.textContent = persistentLimitAlert.message;
+    }
+
+    function clearPersistentAlert() {
+      stopAttentionAlert();
+      persistentLimitAlert = { message: "", type: "" };
+      const el = document.getElementById("limitAlert");
+      if (!el) return;
+      el.className = "limit-alert";
+      el.textContent = "";
+    }
+
+
+    function stopAttentionAlert() {
+      if (attentionBlinkTimeout) {
+        clearTimeout(attentionBlinkTimeout);
+        attentionBlinkTimeout = null;
+      }
+      if (attentionTitleInterval) {
+        clearInterval(attentionTitleInterval);
+        attentionTitleInterval = null;
+      }
+      document.title = ORIGINAL_DOCUMENT_TITLE;
+      const el = document.getElementById("limitAlert");
+      if (el) el.classList.remove("attention-blink");
+    }
+
+    function playAttentionBeep() {
+      if (!CONFIG.alertSoundEnabled) return;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        const ctx = new AudioContextClass();
+        const repeatCount = Math.max(1, Number(CONFIG.alertSoundRepeatCount || 3));
+        const beepDurationMs = Math.max(250, Number(CONFIG.alertSoundDurationMs || 650));
+        const gapMs = Math.max(80, Number(CONFIG.alertSoundGapMs || 250));
+        const totalMs = (repeatCount * beepDurationMs) + ((repeatCount - 1) * gapMs) + 300;
+
+        for (let i = 0; i < repeatCount; i++) {
+          const startTime = ctx.currentTime + ((i * (beepDurationMs + gapMs)) / 1000);
+          const endTime = startTime + (beepDurationMs / 1000);
+
+          const oscillator = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(i % 2 === 0 ? 880 : 1040, startTime);
+
+          gain.gain.setValueAtTime(0.001, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.32, startTime + 0.04);
+          gain.gain.setValueAtTime(0.32, Math.max(startTime + 0.05, endTime - 0.15));
+          gain.gain.exponentialRampToValueAtTime(0.001, endTime);
+
+          oscillator.connect(gain);
+          gain.connect(ctx.destination);
+          oscillator.start(startTime);
+          oscillator.stop(endTime);
+        }
+
+        setTimeout(function () { try { ctx.close(); } catch (_) {} }, totalMs);
+        addDebug("ATTENTION_SOUND_PLAY", "repeatCount=" + repeatCount + " | beepDurationMs=" + beepDurationMs + " | gapMs=" + gapMs);
+      } catch (err) {
+        addDebug("ATTENTION_SOUND_BLOCKED", err.message || String(err));
+      }
+    }
+
+
+    function getNotificationPermissionStatus() {
+      try {
+        if (!("Notification" in window)) return "UNSUPPORTED";
+        return Notification.permission || "default";
+      } catch (_) {
+        return "UNKNOWN";
+      }
+    }
+
+    function requestBrowserNotificationPermissionIfPossible(reason) {
+      if (!CONFIG.browserNotificationEnabled) return;
+      try {
+        if (!("Notification" in window)) {
+          addDebug("BROWSER_NOTIFICATION_UNSUPPORTED", "Notification API is not available in this browser/frame.");
+          return;
+        }
+
+        if (Notification.permission === "granted") {
+          addDebug("BROWSER_NOTIFICATION_PERMISSION", "Already granted. reason=" + safeString(reason));
+          return;
+        }
+
+        if (Notification.permission === "denied") {
+          addDebug("BROWSER_NOTIFICATION_PERMISSION", "Denied by browser/user. reason=" + safeString(reason));
+          return;
+        }
+
+        if (!CONFIG.requestNotificationPermissionOnHold) {
+          addDebug("BROWSER_NOTIFICATION_PERMISSION_SKIP", "requestNotificationPermissionOnHold=false");
+          return;
+        }
+
+        const permissionResult = Notification.requestPermission();
+        if (permissionResult && typeof permissionResult.then === "function") {
+          permissionResult.then(function (permission) {
+            addDebug("BROWSER_NOTIFICATION_PERMISSION", "permission=" + permission + " | reason=" + safeString(reason));
+            renderDebugPanel();
+          }).catch(function (err) {
+            addDebug("BROWSER_NOTIFICATION_PERMISSION_FAILED", err.message || String(err));
+            renderDebugPanel();
+          });
+        } else {
+          addDebug("BROWSER_NOTIFICATION_PERMISSION", "Requested. current=" + getNotificationPermissionStatus() + " | reason=" + safeString(reason));
+        }
+      } catch (err) {
+        addDebug("BROWSER_NOTIFICATION_PERMISSION_FAILED", err.message || String(err));
+      }
+    }
+
+    function showBrowserNotification(title, body) {
+      if (!CONFIG.browserNotificationEnabled) return;
+      try {
+        if (!("Notification" in window)) {
+          addDebug("BROWSER_NOTIFICATION_SKIP", "Notification API unsupported.");
+          return;
+        }
+
+        if (Notification.permission !== "granted") {
+          addDebug("BROWSER_NOTIFICATION_SKIP", "permission=" + Notification.permission + " | title=" + safeString(title));
+          return;
+        }
+
+        const notification = new Notification(title || "Hold Alert", {
+          body: body || "Please return to Genesys Cloud and check the Hold Info page.",
+          tag: "gcb-hold-resume-alert-" + safeString(CONFIG.conversationId),
+          renotify: true,
+          requireInteraction: false,
+          silent: false
+        });
+
+        notification.onclick = function () {
+          try { window.focus(); } catch (_) {}
+          try { notification.close(); } catch (_) {}
+        };
+
+        setTimeout(function () {
+          try { notification.close(); } catch (_) {}
+        }, CONFIG.notificationAutoCloseMs);
+
+        addDebug("BROWSER_NOTIFICATION_SENT", "title=" + safeString(title) + " | autoCloseMs=" + CONFIG.notificationAutoCloseMs);
+      } catch (err) {
+        addDebug("BROWSER_NOTIFICATION_FAILED", err.message || String(err));
+      }
+    }
+
+    function triggerTaskbarAttention(titleText, bodyText) {
+      if (!CONFIG.taskbarBlinkEnabled) return;
+      try {
+        // A browser page cannot directly force Windows taskbar flashing from an embedded iframe.
+        // Browser notification is the supported best-effort method. Title blinking remains the fallback.
+        showBrowserNotification(titleText || "Hold Alert", bodyText || "Hold action requires your attention.");
+        if (navigator.vibrate) {
+          try { navigator.vibrate([250, 120, 250]); } catch (_) {}
+        }
+        addDebug("TASKBAR_ATTENTION", "best-effort | notificationPermission=" + getNotificationPermissionStatus());
+      } catch (err) {
+        addDebug("TASKBAR_ATTENTION_FAILED", err.message || String(err));
+      }
+    }
+
+    function startTitleBlink(titleText, durationMs) {
+      if (!CONFIG.alertBlinkEnabled) return;
+      if (attentionTitleInterval) clearInterval(attentionTitleInterval);
+      const alertTitle = titleText || "⚠️ Auto Resume Sent";
+      let showAlert = true;
+      document.title = alertTitle;
+      attentionTitleInterval = setInterval(function () {
+        showAlert = !showAlert;
+        document.title = showAlert ? alertTitle : ORIGINAL_DOCUMENT_TITLE;
+      }, 900);
+      setTimeout(function () {
+        if (attentionTitleInterval) {
+          clearInterval(attentionTitleInterval);
+          attentionTitleInterval = null;
+        }
+        document.title = ORIGINAL_DOCUMENT_TITLE;
+      }, durationMs || CONFIG.titleBlinkDurationMs);
+    }
+
+    function startAttentionAlert(message, type, titleText) {
+      showPersistentAlert(message, type || "warning");
+      const el = document.getElementById("limitAlert");
+      if (CONFIG.alertBlinkEnabled && el) {
+        el.classList.add("attention-blink");
+        if (attentionBlinkTimeout) clearTimeout(attentionBlinkTimeout);
+        attentionBlinkTimeout = setTimeout(function () {
+          const alertEl = document.getElementById("limitAlert");
+          if (alertEl) alertEl.classList.remove("attention-blink");
+          attentionBlinkTimeout = null;
+        }, CONFIG.alertBlinkDurationMs);
+      }
+      const finalTitleText = titleText || "⚠️ Hold Alert";
+      startTitleBlink(finalTitleText, CONFIG.titleBlinkDurationMs);
+      triggerTaskbarAttention(finalTitleText, safeString(message));
+      playAttentionBeep();
+      addDebug("ATTENTION_ALERT", "blink=" + CONFIG.alertBlinkEnabled + " | sound=" + CONFIG.alertSoundEnabled + " | browserNotification=" + CONFIG.browserNotificationEnabled + " | taskbarBlink=" + CONFIG.taskbarBlinkEnabled + " | message=" + safeString(message));
+    }
+
+    function updateLimitVisualState() {
+      const card = document.getElementById("currentHoldCountCard");
+      if (!card) return;
+      if (getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
+        card.classList.add("limit-reached");
+      } else {
+        card.classList.remove("limit-reached");
+      }
+    }
+
+    function getMaxAttemptsAlertMessage() {
+      const effectiveCount = getEffectiveHoldCount();
+      return "⚠️  ⛔ " + CONFIG.holdMaxAttemptsAlertText + " ⏱ (" + effectiveCount + " / " + CONFIG.maxHoldAttempts + ")";
+    }
+
+    function showMaxAttemptsAlert() {
+      showPersistentAlert(getMaxAttemptsAlertMessage(), "error");
+    }
+
+    function refreshPersistentAlert() {
+      updateLimitVisualState();
+      const effectiveCount = getEffectiveHoldCount();
+
+      // Count limit must always have priority over duration warning.
+      // Example: auto-resume happened due to maxHoldTime, but the resume also completed the final allowed hold pair.
+      // In that case the user should see maximum attempts reached, not only duration reached.
+      if (effectiveCount >= CONFIG.maxHoldAttempts) {
+        showMaxAttemptsAlert();
+        return;
+      }
+
+      if (persistentLimitAlert && persistentLimitAlert.message && persistentLimitAlert.type === "warning") {
+        showPersistentAlert(persistentLimitAlert.message, persistentLimitAlert.type);
+        return;
+      }
+      clearPersistentAlert();
+    }
+
+    function setStatus(message, type) {
+      const el = document.getElementById("statusLine");
+      if (!el) return;
+      el.className = "status-line " + (type || "info");
+      el.textContent = safeString(message);
+      if (!message) el.style.display = "none";
+    }
+
+    function hideStatusSoon() {
+      setTimeout(function () {
+        const el = document.getElementById("statusLine");
+        if (el && (el.className.includes("success") || el.className.includes("info"))) {
+          el.style.display = "none";
+        }
+      }, 3500);
+    }
+
+    const CONFIG = {
+      clientId: getParam("clientId", sessionStorage.getItem(STORAGE_CLIENT_ID) || DEFAULT_CLIENT_ID),
+      region: getParam("region", getParam("gcTargetEnv", sessionStorage.getItem(STORAGE_REGION) || DEFAULT_REGION)),
+      conversationId: getParam("conversationId", "") || deriveConversationIdFromRequestId(getParam("requestId", "")),
+      communicationId: getParam("communicationId", getParam("customerCommunicationId", "")),
+      participantId: getParam("participantId", getParam("agentParticipantId", "")),
+      agentParticipantId: getParam("agentParticipantId", getParam("participantId", "")),
+      customerCommunicationId: getParam("customerCommunicationId", getParam("communicationId", "")),
+      agentCommunicationId: getParam("agentCommunicationId", ""),
+      currentAgentInteractionStartTime: getParam("currentAgentInteractionStartTime", getParam("agentInteractionStartTime", "")),
+      isCustomerBasedHoldCalculation: false,
+      holdMessageText: "Gen-Hold-32",
+      resumeMessageText: "Gen-Resume-33",
+      maxHoldAttempts: 3, // Script owns max-attempt enforcement; Hold Summary uses fixed display fallback 3.
+      maxHoldTime: 180,
+      autoResumeEnabled: false,
+      displayActionButton: getBoolParam("displayActionButton", true),
+      externalAction: safeString(getParam("externalAction", getParam("action", "NONE"))).toUpperCase(),
+      externalActionRequestId: safeString(getParam("requestId", "")),
+      holdDetailsApiUrl: getParam("holdDetailsApiUrl", getParam("calculateHoldDetailsUrl", "")),
+      debug: getBoolParam("debug", false),
+      visibleDebug: getBoolParam("pageDebug", false) || getBoolParam("showPageDebug", false),
+      alertBlinkEnabled: true,
+      alertSoundEnabled: false, // disabled in holdresume.html; holdtimer.html handles sound
+      alertBlinkDurationMs: 15000,
+      titleBlinkDurationMs: 30000,
+      alertSoundRepeatCount: 3,
+      alertSoundDurationMs: 600,
+      alertSoundGapMs: 350,
+      browserNotificationEnabled: false, // disabled in holdresume.html; holdtimer.html handles browser notification
+      taskbarBlinkEnabled: false, // disabled in holdresume.html; holdtimer.html handles taskbar/browser attention
+      requestNotificationPermissionOnHold: false, // disabled in holdresume.html
+      notificationAutoCloseMs: 12000,
+      autoRefreshDelayMs: Math.max(500, getNumberParam("autoRefreshDelayMs", 1200)),
+      source: getParam("source", "HoldResumePage"),
+      holdMaxTimeAlertText: "Maximum hold duration reached. Please resume the chat.",
+      holdMaxAttemptsAlertText: "You have reached the maximum allowed hold attempts.",
+      holdAlertTitle: "Hold Alert",
+      autoResumeSentText: "Auto resume sent."
+    };
+
+    function attrText(attrs, name, fallback) {
+      const value = attrs && Object.prototype.hasOwnProperty.call(attrs, name) ? attrs[name] : undefined;
+      const text = safeString(value).trim();
+      return text || safeString(fallback);
+    }
+    function attrBool(attrs, name, fallback) {
+      const text = attrText(attrs, name, "").toLowerCase();
+      if (["true", "yes", "1", "y"].includes(text)) return true;
+      if (["false", "no", "0", "n"].includes(text)) return false;
+      return fallback;
+    }
+    function attrNumber(attrs, name, fallback, min) {
+      const value = Number(attrText(attrs, name, ""));
+      if (!Number.isFinite(value)) return fallback;
+      return typeof min === "number" ? Math.max(min, value) : value;
+    }
+    function mergeParticipantAttributesFromConversation(conversation) {
+      const output = {};
+      const participants = Array.isArray(conversation && conversation.participants) ? conversation.participants : [];
+      participants.forEach(function (participant) {
+        if (participant && participant.attributes) Object.assign(output, participant.attributes);
+      });
+      participants.forEach(function (participant) {
+        const id = safeString(participant && participant.id);
+        if (id && (id === CONFIG.participantId || id === CONFIG.agentParticipantId) && participant.attributes) {
+          Object.assign(output, participant.attributes);
+        }
+      });
+      return output;
+    }
+    function applyParticipantConfig(attrs) {
+      if (!attrs || !Object.keys(attrs).length) return;
+      CONFIG.holdMessageText = decodeMessageText(attrText(attrs, "AFT_GCB_HoldMessageText", CONFIG.holdMessageText));
+      CONFIG.resumeMessageText = decodeMessageText(attrText(attrs, "AFT_GCB_ResumeMessageText", CONFIG.resumeMessageText));
+      CONFIG.maxHoldTime = attrNumber(attrs, "AFT_GCB_MaxHoldTimeSeconds", CONFIG.maxHoldTime, 1);
+      CONFIG.autoResumeEnabled = attrBool(attrs, "AFT_GCB_AutoResumeEnabled", CONFIG.autoResumeEnabled);
+      CONFIG.isCustomerBasedHoldCalculation = attrBool(attrs, "AFT_GCB_CustomerBasedHoldCalculation", CONFIG.isCustomerBasedHoldCalculation);
+      CONFIG.alertBlinkEnabled = attrBool(attrs, "AFT_GCB_AlertBlinkEnabled", CONFIG.alertBlinkEnabled);
+      CONFIG.alertBlinkDurationMs = attrNumber(attrs, "AFT_GCB_AlertBlinkDurationMs", CONFIG.alertBlinkDurationMs, 3000);
+      CONFIG.alertSoundRepeatCount = attrNumber(attrs, "AFT_GCB_AlertSoundRepeatCount", CONFIG.alertSoundRepeatCount, 1);
+      CONFIG.alertSoundDurationMs = attrNumber(attrs, "AFT_GCB_AlertSoundDurationMs", CONFIG.alertSoundDurationMs, 250);
+      CONFIG.alertSoundGapMs = attrNumber(attrs, "AFT_GCB_AlertSoundGapMs", CONFIG.alertSoundGapMs, 80);
+      CONFIG.titleBlinkDurationMs = attrNumber(attrs, "AFT_GCB_TitleBlinkDurationMs", CONFIG.titleBlinkDurationMs, 3000);
+      CONFIG.notificationAutoCloseMs = attrNumber(attrs, "AFT_GCB_NotificationAutoCloseMs", CONFIG.notificationAutoCloseMs, 3000);
+      CONFIG.holdMaxTimeAlertText = attrText(attrs, "AFT_GCB_HoldMaxTimeAlertText", CONFIG.holdMaxTimeAlertText);
+      CONFIG.holdMaxAttemptsAlertText = attrText(attrs, "AFT_GCB_HoldMaxAttemptsAlertText", CONFIG.holdMaxAttemptsAlertText);
+      CONFIG.holdAlertTitle = attrText(attrs, "AFT_GCB_HoldAlertTitle", CONFIG.holdAlertTitle);
+      CONFIG.autoResumeSentText = attrText(attrs, "AFT_GCB_AutoResumeSentText", CONFIG.autoResumeSentText);
+      addDebug("PARTICIPANT_CONFIG_APPLIED", "maxHoldAttempts=fixed-3 | maxHoldTime=" + CONFIG.maxHoldTime + " | autoResumeEnabled=" + CONFIG.autoResumeEnabled);
+    }
+    async function loadParticipantConfig(token) {
+      if (!token || !CONFIG.conversationId) return;
+      const conversation = await getMessageConversationDirect(token, CONFIG.conversationId);
+      applyParticipantConfig(mergeParticipantAttributesFromConversation(conversation));
+    }
+
+    if (CONFIG.clientId) sessionStorage.setItem(STORAGE_CLIENT_ID, CONFIG.clientId);
+    if (CONFIG.region) sessionStorage.setItem(STORAGE_REGION, CONFIG.region);
+
+    const LOGIN_BASE = "https://login." + CONFIG.region;
+    const API_BASE = "https://api." + CONFIG.region;
+
+    function deriveConversationIdFromRequestId(requestId) {
+      const match = safeString(requestId).match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+      return match ? match[0] : "";
+    }
+
+    function decodeMessageText(value) {
+      return safeString(value)
+        .replaceAll("@@COMMA@@", ",")
+        .replaceAll("@@AMP@@", "&")
+        .replaceAll("@@PIPE@@", "|");
+    }
+
+    function getContextKey() {
+      return sanitizeKey((CONFIG.conversationId || "NO_CONV") + "_" + (CONFIG.communicationId || CONFIG.customerCommunicationId || "NO_COMM"));
+    }
+
+    function getButtonStateKey() {
+      return STORAGE_BUTTON_PREFIX + getContextKey();
+    }
+
+    function getTimerStateKey() {
+      return STORAGE_TIMER_PREFIX + getContextKey();
+    }
+
+    function getSummaryStateKey() {
+      return STORAGE_SUMMARY_PREFIX + getContextKey();
+    }
+
+    function getAttemptStateKey() {
+      return STORAGE_ATTEMPT_PREFIX + getContextKey();
+    }
+
+    function getAuthRecoveryStateKey() {
+      return STORAGE_AUTH_RECOVERY_PREFIX + getContextKey();
+    }
+
+    function getCentralHoldKey() {
+      return sanitizeKey([
+        CONFIG.conversationId || "NO_CONV",
+        CONFIG.agentCommunicationId || CONFIG.communicationId || "NO_AGENT_COMM",
+        CONFIG.customerCommunicationId || "NO_CUSTOMER_COMM"
+      ].join("|"));
+    }
+
+    function readCentralHoldRecords() {
+      try {
+        const raw = localStorage.getItem(GCB_ACTIVE_HOLDS_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function writeCentralHoldRecords(records) {
+      try { localStorage.setItem(GCB_ACTIVE_HOLDS_KEY, JSON.stringify(records || {})); } catch (_) {}
+    }
+
+    function broadcastCentralHoldEvent(type, record) {
+      try {
+        if (typeof BroadcastChannel !== "undefined") {
+          const channel = new BroadcastChannel(GCB_HOLD_CHANNEL);
+          channel.postMessage({ type: type, record: record || null, time: new Date().toISOString() });
+          channel.close();
+        }
+      } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent("gcb-hold-monitor-event", { detail: { type: type, record: record || null } })); } catch (_) {}
+    }
+
+    function touchCentralHoldRecord(activity) {
+      const records = readCentralHoldRecords();
+      const key = getCentralHoldKey();
+      const record = records[key];
+      if (!record || record.status !== "HOLD") return;
+      record.activePageId = GCB_HOLD_PAGE_ID;
+      record.activePageHeartbeatMs = Date.now();
+      record.activePageHeartbeatUtc = new Date().toISOString();
+      record.activePageVisible = !document.hidden;
+      record.activePageActivity = activity || "HEARTBEAT";
+      records[key] = record;
+      writeCentralHoldRecords(records);
+    }
+
+    function startCentralHoldHeartbeat() {
+      setInterval(function () {
+        if (isOnHold) {
+          touchCentralHoldRecord("INTERVAL");
+          applyCentralAutoResumeIfPresent();
+        }
+      }, 1000);
+      document.addEventListener("visibilitychange", function () {
+        if (isOnHold) touchCentralHoldRecord(document.hidden ? "HIDDEN" : "VISIBLE");
+        if (!document.hidden) applyCentralAutoResumeIfPresent();
+      });
+      window.addEventListener("focus", function () {
+        if (isOnHold) touchCentralHoldRecord("FOCUS");
+        applyCentralAutoResumeIfPresent();
+      });
+    }
+
+    function saveCentralHoldRecord() {
+      if (!CONFIG.conversationId || !(CONFIG.agentCommunicationId || CONFIG.communicationId)) return;
+      const records = readCentralHoldRecords();
+      const key = getCentralHoldKey();
+      const nowMs = Date.now();
+      const record = {
+        key: key,
+        conversationId: CONFIG.conversationId,
+        communicationId: CONFIG.communicationId,
+        agentCommunicationId: CONFIG.agentCommunicationId || CONFIG.communicationId,
+        participantId: CONFIG.participantId,
+        agentParticipantId: CONFIG.agentParticipantId || CONFIG.participantId,
+        customerCommunicationId: CONFIG.customerCommunicationId,
+        holdMessageText: CONFIG.holdMessageText,
+        resumeMessageText: CONFIG.resumeMessageText,
+        maxHoldTime: CONFIG.maxHoldTime,
+        autoResumeEnabled: CONFIG.autoResumeEnabled,
+        holdStartTimeMs: nowMs,
+        holdStartTimeUtc: new Date(nowMs).toISOString(),
+        status: "HOLD",
+        resumeSent: false,
+        activePageId: GCB_HOLD_PAGE_ID,
+        activePageHeartbeatMs: nowMs,
+        activePageHeartbeatUtc: new Date(nowMs).toISOString(),
+        activePageVisible: !document.hidden,
+        activePageActivity: "HOLD_STARTED",
+        source: "holdresume.html"
+      };
+      records[key] = record;
+      writeCentralHoldRecords(records);
+      broadcastCentralHoldEvent("HOLD_STARTED", record);
+      addDebug("CENTRAL_HOLD_RECORD_SAVED", "key=" + key + " | maxHoldTime=" + CONFIG.maxHoldTime);
+    }
+
+    function updateCentralHoldRecordStatus(status, reason) {
+      const records = readCentralHoldRecords();
+      const key = getCentralHoldKey();
+      const record = records[key];
+      if (!record) return;
+      const nowIso = new Date().toISOString();
+      record.status = status;
+      // RESUME_IN_PROGRESS is also treated as resumeSent=true so the central monitor will not send another Resume
+      // while a manual Resume or central Resume is already being processed.
+      record.resumeSent = status === "RESUME_IN_PROGRESS" || status === "RESUMED_AUTO" || status === "RESUMED_MANUAL";
+      if (status === "RESUME_IN_PROGRESS") {
+        record.resumeAttemptTimeUtc = nowIso;
+      } else if (status === "HOLD_EXCEEDED") {
+        record.resumeSent = false;
+        record.holdExceededTimeUtc = nowIso;
+      } else if (status === "HOLD") {
+        record.resumeSent = false;
+        delete record.resumeAttemptTimeUtc;
+        delete record.resumeTimeUtc;
+      } else {
+        record.resumeTimeUtc = nowIso;
+      }
+      record.reason = reason || "";
+      record.activePageVisible = false;
+      record.activePageActivity = status;
+
+      // v1.7.2.11 reset fix:
+      // After Resume is completed, remove the active central hold record.
+      // holdtimer.html reads this storage key, so removing the record immediately resets
+      // the timer widget to "No active hold 00:00" even after a time-limit alert.
+      if (status === "RESUMED_AUTO" || status === "RESUMED_MANUAL") {
+        delete records[key];
+        writeCentralHoldRecords(records);
+        broadcastCentralHoldEvent(status, record);
+        addDebug("CENTRAL_HOLD_RECORD_REMOVED", "key=" + key + " | status=" + status + " | reason=" + safeString(reason));
+        return;
+      }
+
+      records[key] = record;
+      writeCentralHoldRecords(records);
+      broadcastCentralHoldEvent(status, record);
+      addDebug("CENTRAL_HOLD_RECORD_UPDATED", "key=" + key + " | status=" + status + " | reason=" + safeString(reason));
+    }
+
+    function readOwnCentralHoldRecord() {
+      return readCentralHoldRecords()[getCentralHoldKey()] || null;
+    }
+
+    function applyCentralAutoResumeIfPresent() {
+      const record = readOwnCentralHoldRecord();
+      if (!record) return false;
+
+      if (record.status === "RESUME_IN_PROGRESS" && isOnHold) {
+        const btn = document.getElementById("holdResumeBtn");
+        if (btn) btn.disabled = true;
+        setStatus("Resume is already in progress. Please wait...", "info");
+        addDebug("CENTRAL_RESUME_IN_PROGRESS_SEEN", "key=" + record.key);
+        return true;
+      }
+
+      if (record.status !== "RESUMED_AUTO" && record.status !== "RESUMED_MANUAL") return false;
+      if (!isOnHold) return true;
+      isOnHold = false;
+      persistButtonState();
+      stopMaxHoldTimer(true);
+      updateButtonState();
+      if (record.status === "RESUMED_AUTO") {
+        setStatus("Auto resume was already sent by central GCB monitor.", "success");
+        showPersistentAlert("Auto resume was sent by the central GCB monitor because maximum hold duration was reached.", "warning");
+        addDebug("CENTRAL_AUTO_RESUME_APPLIED", "key=" + record.key);
+      } else {
+        setStatus("Resume was already completed.", "success");
+        addDebug("CENTRAL_MANUAL_RESUME_APPLIED", "key=" + record.key);
+      }
+      hideStatusSoon();
+      return true;
+    }
+
+    function clearOAuthToken() {
+      try {
+        sessionStorage.removeItem("gc_access_token");
+        sessionStorage.removeItem("gc_token_expires_at");
+      } catch (_) {}
+    }
+
+    function isAuthOrConversationAccessError(error) {
+      const text = safeString(error && (error.message || error)).toLowerCase();
+      return (
+        text.includes("http 401") ||
+        text.includes("http 403") ||
+        text.includes("unauthorized") ||
+        text.includes("forbidden") ||
+        text.includes("access to conversation") ||
+        text.includes("not.authorized")
+      );
+    }
+
+    async function recoverAuthAndReload(reason) {
+      if (!CONFIG.clientId) return false;
+
+      const key = getAuthRecoveryStateKey();
+      const alreadyAttempted = sessionStorage.getItem(key) === "YES";
+      if (alreadyAttempted) {
+        addDebug("AUTH_RECOVERY_SKIP", "Already attempted OAuth recovery for this conversation. reason=" + safeString(reason));
+        return false;
+      }
+
+      sessionStorage.setItem(key, "YES");
+      clearOAuthToken();
+      setStatus("Genesys login/MFA is required before validating hold count. Redirecting to login...", "info");
+      showPersistentAlert("Genesys login/MFA is required. The page will reload automatically after authentication.", "warning");
+      addDebug("AUTH_RECOVERY_START", safeString(reason));
+      await startPKCELogin();
+      return true;
+    }
+
+    function loadAttemptState() {
+      try {
+        const raw = localStorage.getItem(getAttemptStateKey());
+        if (!raw) return { startedCount: 0 };
+        const parsed = JSON.parse(raw);
+        return { startedCount: parseCount(parsed && parsed.startedCount) };
+      } catch (_) {
+        return { startedCount: 0 };
+      }
+    }
+
+    function saveAttemptState(state) {
+      try {
+        localStorage.setItem(getAttemptStateKey(), JSON.stringify({
+          startedCount: parseCount(state && state.startedCount),
+          savedAt: Date.now()
+        }));
+      } catch (_) {}
+    }
+
+    function getAttemptStartedCount() {
+      return parseCount(loadAttemptState().startedCount);
+    }
+
+    function getEffectiveHoldCount() {
+      return Math.max(getCurrentSessionCount(), getAttemptStartedCount());
+    }
+
+    function markHoldAttemptStarted() {
+      const current = getCurrentSessionCount();
+      const state = loadAttemptState();
+      state.startedCount = Math.max(parseCount(state.startedCount), current) + 1;
+      saveAttemptState(state);
+      addDebug("LOCAL_ATTEMPT_COUNT", "startedCount=" + state.startedCount + " | apiCurrentCount=" + current);
+      return state.startedCount;
+    }
+
+    function syncAttemptStateFromSummary(data) {
+      const completedCount = parseCount(data && data.currentHoldCount);
+      const state = loadAttemptState();
+      if (completedCount > parseCount(state.startedCount)) {
+        state.startedCount = completedCount;
+        saveAttemptState(state);
+      }
+      data.currentHoldCount = Math.max(completedCount, parseCount(state.startedCount));
+      return data;
+    }
+
+    function hhmmss(totalSeconds) {
+      const safe = Math.max(0, Math.floor(Number(totalSeconds || 0)));
+      const h = String(Math.floor(safe / 3600)).padStart(2, "0");
+      const m = String(Math.floor((safe % 3600) / 60)).padStart(2, "0");
+      const s = String(safe % 60).padStart(2, "0");
+      return h + ":" + m + ":" + s;
+    }
+
+    function mmss(totalSeconds) {
+      const safe = Math.max(0, Math.floor(Number(totalSeconds || 0)));
+      const m = String(Math.floor(safe / 60)).padStart(2, "0");
+      const s = String(safe % 60).padStart(2, "0");
+      return m + ":" + s;
+    }
+
+    function parseCount(value) {
+      const num = Number(safeString(value));
+      if (!Number.isFinite(num)) return 0;
+      return Math.max(0, Math.floor(num));
+    }
+
+    function getCurrentSessionCount() {
+      return parseCount(document.getElementById("currentHoldCount").textContent);
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = safeString(value);
+    }
+
+    function getLatestSegmentsText(currentSegments, holdHistory) {
+      const raw = safeString(currentSegments || holdHistory || "").trim();
+      if (!raw || raw === "Current session") return "No completed hold segments yet.";
+      const list = raw.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!list.length) return "No completed hold segments yet.";
+      return list.slice(-3).join(", ");
+    }
+
+    function renderRecentSegments(data) {
+      const el = document.getElementById("currentSegments");
+      if (!el) return;
+      const text = getLatestSegmentsText(data && data.currentSegments, data && data.holdHistory);
+      el.textContent = text;
+      if (text === "No completed hold segments yet.") el.classList.add("empty");
+      else el.classList.remove("empty");
+    }
+
+    function applySummary(summary) {
+      const data = syncAttemptStateFromSummary(normalizeSummary(summary || {}));
+      latestSummary = data;
+      try { localStorage.setItem(getSummaryStateKey(), JSON.stringify(data)); } catch (_) {}
+
+      setText("currentHoldCount", data.currentHoldCount);
+      setText("maxHoldAttempts", CONFIG.maxHoldAttempts);
+      setText("maxHoldAttemptsSub", CONFIG.maxHoldAttempts);
+      resetTimerIndicator("Timer not active");
+      setText("currentHoldTime", data.currentHoldTime);
+      renderRecentSegments(data);
+      setText("totalHoldCount", data.totalHoldCount);
+      setText("totalHoldTime", data.totalHoldTime);
+      setText("averageHoldTime", data.averageHoldTime);
+      setText("longestHoldTime", data.longestHoldTime);
+      setText("holdHistory", data.holdHistory || "");
+
+      updateLimitVisualState();
+      applyVisibleTimerFromCentralRecord("APPLY_SUMMARY");
+      updateButtonState();
+    }
+
+    function parseHHMMSSToSeconds(value) {
+      const text = safeString(value).trim();
+      if (!text) return 0;
+      const parts = text.split(":").map(function (p) { return Number(p); });
+      if (parts.some(function (n) { return !Number.isFinite(n); })) return 0;
+      if (parts.length === 3) return Math.max(0, Math.floor((parts[0] * 3600) + (parts[1] * 60) + parts[2]));
+      if (parts.length === 2) return Math.max(0, Math.floor((parts[0] * 60) + parts[1]));
+      if (parts.length === 1) return Math.max(0, Math.floor(parts[0]));
+      return 0;
+    }
+
+    function mergeSegmentList(existing, segmentOrList) {
+      const values = safeString(existing)
+        .split(",")
+        .map(function (v) { return safeString(v).trim(); })
+        .filter(Boolean);
+
+      const additions = safeString(segmentOrList)
+        .split(",")
+        .map(function (v) { return safeString(v).trim(); })
+        .filter(Boolean);
+
+      additions.forEach(function (segment) {
+        if (!values.includes(segment) || values.filter(function (v) { return v === segment; }).length < additions.filter(function (v) { return v === segment; }).length) {
+          values.push(segment);
+        }
+      });
+
+      return values.join(", ");
+    }
+
+    function getActiveHoldElapsedSecondsBeforeStop() {
+      if (activeTimer && activeTimer.startedAt) {
+        return Math.max(0, Math.floor((Date.now() - Number(activeTimer.startedAt)) / 1000));
+      }
+      try {
+        const raw = localStorage.getItem(getTimerStateKey());
+        const timer = raw ? JSON.parse(raw) : null;
+        if (timer && timer.startedAt) {
+          return Math.max(0, Math.floor((Date.now() - Number(timer.startedAt)) / 1000));
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    function applyLocalHoldStartedSummary(startedCount) {
+      const base = normalizeSummary(latestSummary || loadCachedSummary() || buildInitialSummaryFromParams());
+      base.currentHoldCount = Math.max(parseCount(base.currentHoldCount), parseCount(startedCount), getAttemptStartedCount());
+      base.currentHoldTime = base.currentHoldTime || "00:00:00";
+      applySummary(base);
+      addDebug("LOCAL_HOLD_SUMMARY_APPLIED", "currentHoldCount=" + base.currentHoldCount);
+    }
+
+    function applyLocalResumeCompletedSummary(elapsedSeconds) {
+      const base = normalizeSummary(latestSummary || loadCachedSummary() || buildInitialSummaryFromParams());
+      const attemptCount = Math.max(getAttemptStartedCount(), parseCount(base.currentHoldCount));
+      const segmentSeconds = Math.max(0, Math.floor(Number(elapsedSeconds || 0)));
+      const segment = hhmmss(segmentSeconds);
+
+      const existingCurrentSeconds = parseHHMMSSToSeconds(base.currentHoldTime);
+      const existingTotalSeconds = parseHHMMSSToSeconds(base.totalHoldTime);
+      const currentSeconds = existingCurrentSeconds + segmentSeconds;
+      const totalSeconds = existingTotalSeconds + segmentSeconds;
+      const totalCount = Math.max(parseCount(base.totalHoldCount) + (segmentSeconds > 0 ? 1 : 0), attemptCount);
+      const averageSeconds = totalCount > 0 ? Math.floor(totalSeconds / totalCount) : 0;
+      const longestSeconds = Math.max(parseHHMMSSToSeconds(base.longestHoldTime), segmentSeconds);
+
+      base.currentHoldCount = attemptCount;
+      base.currentHoldTime = hhmmss(currentSeconds);
+      base.currentSegments = mergeSegmentList(base.currentSegments, segmentSeconds > 0 ? segment : "");
+      base.totalHoldCount = totalCount;
+      base.totalHoldTime = hhmmss(totalSeconds);
+      base.holdHistory = mergeSegmentList(base.holdHistory, segmentSeconds > 0 ? segment : "");
+      base.averageHoldTime = hhmmss(averageSeconds);
+      base.longestHoldTime = hhmmss(longestSeconds);
+
+      applySummary(base);
+      addDebug("LOCAL_RESUME_SUMMARY_APPLIED", "elapsed=" + segment + " | current=" + base.currentHoldCount + " | total=" + base.totalHoldCount);
+    }
+
+
+    function normalizeSummary(raw) {
+      return {
+        currentHoldCount: parseCount(raw.CurrentSession_Hold_TotalCount || raw.currentHoldCount || raw.CurrentSession_Hold_Count || 0),
+        currentHoldTime: safeString(raw.CurrentSession_Hold_TotalHHMMSS || raw.currentHoldTime || "00:00:00") || "00:00:00",
+        currentSegments: safeString(raw.CurrentSession_Hold_Total_Hours_Segment_List || raw.currentHoldSegments || raw.currentSegments || ""),
+        totalHoldCount: parseCount(raw.Hold_TotalCount || raw.totalHoldCount || 0),
+        totalHoldTime: safeString(raw.Hold_TotalHHMMSS || raw.totalHoldTime || "00:00:00") || "00:00:00",
+        averageHoldTime: safeString(raw.averageHoldTime || raw.AverageHoldTime || "00:00:00") || "00:00:00",
+        longestHoldTime: safeString(raw.longestHoldTime || raw.LongestHoldTime || "00:00:00") || "00:00:00",
+        holdHistory: safeString(raw.Hold_Total_Hours_Segment_List || raw.holdHistory || "")
+      };
+    }
+
+    function buildInitialSummaryFromParams() {
+      return normalizeSummary({
+        currentHoldCount: getParam("currentHoldCount", "0"),
+        currentHoldTime: getParam("currentHoldTime", "00:00:00"),
+        currentSegments: getParam("currentHoldSegments", getParam("currentSegments", "")),
+        totalHoldCount: getParam("totalHoldCount", "0"),
+        totalHoldTime: getParam("totalHoldTime", "00:00:00"),
+        averageHoldTime: getParam("averageHoldTime", "00:00:00"),
+        longestHoldTime: getParam("longestHoldTime", "00:00:00"),
+        holdHistory: getParam("holdHistory", "")
+      });
+    }
+
+    function loadCachedSummary() {
+      try {
+        const raw = localStorage.getItem(getSummaryStateKey());
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function updateButtonState() {
+      const btn = document.getElementById("holdResumeBtn");
+      if (!btn) return;
+
+      btn.disabled = isProcessing || isInitialSummaryLoading;
+      btn.className = "hold-action-btn" + (isOnHold ? " resume" : "");
+      btn.textContent = isOnHold ? "Resume" : "Hold";
+
+      if (isInitialSummaryLoading) {
+        btn.disabled = true;
+        btn.title = "Checking existing hold count. Please wait.";
+      } else if (!isOnHold && getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
+        btn.disabled = true;
+        btn.title = "Maximum hold attempts reached.";
+      } else {
+        btn.title = "";
+      }
+
+      refreshPersistentAlert();
+    }
+
+    function persistButtonState() {
+      try {
+        localStorage.setItem(getButtonStateKey(), JSON.stringify({ isOnHold, savedAt: Date.now() }));
+      } catch (_) {}
+    }
+
+    function restoreButtonState() {
+      try {
+        const raw = localStorage.getItem(getButtonStateKey());
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        isOnHold = state && state.isOnHold === true;
+      } catch (_) {}
+    }
+
+    /************************************************************
+     * OAuth PKCE
+     ************************************************************/
+    function getAccessToken() {
+      const token = sessionStorage.getItem("gc_access_token");
+      const expiresAt = Number(sessionStorage.getItem("gc_token_expires_at") || 0);
+      if (!token) return "";
+      if (!expiresAt || Date.now() > expiresAt - 60000) {
+        sessionStorage.removeItem("gc_access_token");
+        sessionStorage.removeItem("gc_token_expires_at");
+        return "";
+      }
+      return token;
+    }
+
+    function base64UrlEncode(arrayBuffer) {
+      let str = "";
+      const bytes = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+      return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    }
+
+    function generateCodeVerifier() {
+      const array = new Uint8Array(64);
+      window.crypto.getRandomValues(array);
+      return base64UrlEncode(array);
+    }
+
+    async function generateCodeChallenge(codeVerifier) {
+      const data = new TextEncoder().encode(codeVerifier);
+      const digest = await window.crypto.subtle.digest("SHA-256", data);
+      return base64UrlEncode(new Uint8Array(digest));
+    }
+
+    async function startPKCELogin() {
+      if (!CONFIG.clientId) throw new Error("clientId is required for Genesys OAuth login.");
+      const verifier = generateCodeVerifier();
+      const challenge = await generateCodeChallenge(verifier);
+      sessionStorage.setItem("pkce_code_verifier", verifier);
+      sessionStorage.setItem(STORAGE_ORIGINAL_URL, window.location.href);
+      sessionStorage.setItem("gcb_gcb_auth_original_url", window.location.href);
+      sessionStorage.setItem("gcb_clientId", CONFIG.clientId || "");
+      sessionStorage.setItem("gcb_region", CONFIG.region || "");
+      const url = LOGIN_BASE + "/oauth/authorize" +
+        "?response_type=code" +
+        "&client_id=" + encodeURIComponent(CONFIG.clientId) +
+        "&redirect_uri=" + encodeURIComponent(REDIRECT_URI) +
+        "&code_challenge=" + encodeURIComponent(challenge) +
+        "&code_challenge_method=S256";
+      window.location.href = url;
+    }
+
+    async function handleOAuthCallback(code) {
+      const verifier = sessionStorage.getItem("pkce_code_verifier");
+      if (!verifier) throw new Error("Missing PKCE verifier. Please reload the page and login again.");
+      const body = new URLSearchParams();
+      body.append("grant_type", "authorization_code");
+      body.append("client_id", CONFIG.clientId);
+      body.append("code", code);
+      body.append("redirect_uri", REDIRECT_URI);
+      body.append("code_verifier", verifier);
+
+      const response = await fetch(LOGIN_BASE + "/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      const text = await response.text();
+      const result = text ? JSON.parse(text) : {};
+      if (!response.ok) throw new Error("Token request failed: " + text);
+      sessionStorage.setItem("gc_access_token", result.access_token);
+      sessionStorage.setItem("gc_token_expires_at", String(Date.now() + ((result.expires_in || 3600) * 1000)));
+    }
+
+    /************************************************************
+     * Genesys message send
+     ************************************************************/
+    async function resolveCommunicationId(token) {
+      if (CONFIG.communicationId) return CONFIG.communicationId;
+      const endpoint = API_BASE + "/api/v2/conversations/messages/" + encodeURIComponent(CONFIG.conversationId);
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+      });
+      const text = await response.text();
+      if (!response.ok) throw new Error("Communication lookup failed. HTTP " + response.status + " - " + text);
+      const conversation = text ? JSON.parse(text) : {};
+      const communicationId = extractBestCommunicationId(conversation);
+      if (!communicationId) throw new Error("communicationId could not be resolved from conversation.");
+      CONFIG.communicationId = communicationId;
+      return communicationId;
+    }
+
+    function extractBestCommunicationId(conversation) {
+      if (!conversation || !Array.isArray(conversation.participants)) return "";
+      const preferredPurposes = ["customer", "external", "agent"];
+      for (const purpose of preferredPurposes) {
+        for (const participant of conversation.participants) {
+          if (safeString(participant.purpose).toLowerCase() !== purpose) continue;
+          const id = extractCommunicationIdFromParticipant(participant);
+          if (id) return id;
+        }
+      }
+      for (const participant of conversation.participants) {
+        const id = extractCommunicationIdFromParticipant(participant);
+        if (id) return id;
+      }
+      return "";
+    }
+
+    function extractCommunicationIdFromParticipant(participant) {
+      const arrays = [participant.messages, participant.message, participant.communications, participant.chats];
+      for (const arr of arrays) {
+        if (!Array.isArray(arr)) continue;
+        const connected = arr.find(x => x && x.id && ["connected", "alerting", "dialing"].includes(safeString(x.state).toLowerCase()));
+        if (connected && connected.id) return connected.id;
+        const firstWithId = arr.find(x => x && x.id);
+        if (firstWithId && firstWithId.id) return firstWithId.id;
+      }
+      return "";
+    }
+
+    function buildRequestId(action) {
+      return sanitizeKey((CONFIG.conversationId || "NO_CONV") + "-" + action + "-" + (CONFIG.agentCommunicationId || CONFIG.communicationId || "NO_COMM") + "-" + Date.now());
+    }
+
+    async function sendMessageToConversation(action, messageText) {
+      let token = getAccessToken();
+      if (!token) {
+        await startPKCELogin();
+        return { redirected: true };
+      }
+
+      if (!CONFIG.conversationId) throw new Error("conversationId is required.");
+      if (!messageText) throw new Error(action + " message text is required.");
+
+      const communicationId = await resolveCommunicationId(token);
+      const requestId = buildRequestId(action);
+      const endpoint = API_BASE + "/api/v2/conversations/messages/" + encodeURIComponent(CONFIG.conversationId) +
+        "/communications/" + encodeURIComponent(communicationId) + "/messages";
+
+      addDebug("SEND_REQUEST", action + " | " + endpoint.replace(API_BASE, "") + " | requestId=" + requestId);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ textBody: messageText })
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        if (response.status === 401) {
+          sessionStorage.removeItem("gc_access_token");
+          sessionStorage.removeItem("gc_token_expires_at");
+        }
+        throw new Error("Send " + action + " failed. HTTP " + response.status + " - " + text);
+      }
+
+      addDebug("SEND_OK", action + " | requestId=" + requestId);
+      return { ok: true, requestId, responseText: text };
+    }
+
+    /************************************************************
+     * Hold details refresh
+     * Priority:
+     * 1) If holdDetailsApiUrl is configured, call that API.
+     * 2) If not configured, calculate directly from Genesys conversation messages using the current OAuth token.
+     ************************************************************/
+    let summaryRefreshPromise = null;
+    let summaryRefreshBlockedUntil = 0;
+    const messageDetailCache = new Map();
+
+    async function refreshHoldSummary(showStatus) {
+      if (Date.now() < summaryRefreshBlockedUntil) {
+        addDebug("SUMMARY_REFRESH_THROTTLED", "Retry after rate-limit cooldown.");
+        return;
+      }
+      if (summaryRefreshPromise) {
+        addDebug("SUMMARY_REFRESH_JOINED", "Existing summary refresh is already running.");
+        return summaryRefreshPromise;
+      }
+      summaryRefreshPromise = (async function () {
+
+      if (CONFIG.holdDetailsApiUrl) {
+        await refreshHoldSummaryFromApi(showStatus);
+        return;
+      }
+
+      await refreshHoldSummaryFromGenesys(showStatus);
+      })();
+      try {
+        return await summaryRefreshPromise;
+      } finally {
+        summaryRefreshPromise = null;
+      }
+    }
+
+    async function refreshHoldSummaryFromApi(showStatus) {
+      const body = buildHoldDetailsRequestBody();
+
+      addDebug("SUMMARY_API_REQUEST", JSON.stringify(body));
+
+      const response = await fetch(CONFIG.holdDetailsApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_) { data = {}; }
+      if (!response.ok || data.status === "ERROR" || data.success === false) {
+        throw new Error("Hold summary fetch failed. HTTP " + response.status + " - " + (data.message || text));
+      }
+
+      applySummary(data);
+      addDebug("SUMMARY_API_OK", "Current=" + data.CurrentSession_Hold_TotalCount + " | Total=" + data.Hold_TotalCount);
+      if (showStatus) {
+        setStatus("Hold summary refreshed successfully.", "success");
+        hideStatusSoon();
+      }
+    }
+
+    function buildHoldDetailsRequestBody() {
+      return {
+        conversationId: CONFIG.conversationId,
+        participantId: CONFIG.participantId,
+        agentParticipantId: CONFIG.agentParticipantId,
+        customerCommunicationId: CONFIG.customerCommunicationId || CONFIG.communicationId,
+        agentCommunicationId: CONFIG.agentCommunicationId,
+        communicationId: CONFIG.communicationId,
+        currentAgentInteractionStartTime: CONFIG.currentAgentInteractionStartTime,
+        isCustomerBasedHoldCalculation: CONFIG.isCustomerBasedHoldCalculation,
+        setDebugAttribute: CONFIG.debug,
+        source: CONFIG.source,
+        version: HR_VERSION
+      };
+    }
+
+    async function refreshHoldSummaryFromGenesys(showStatus) {
+      const token = getAccessToken();
+
+      if (!token) {
+        const cached = loadCachedSummary();
+        applySummary(cached || buildInitialSummaryFromParams());
+        if (showStatus) {
+          setStatus("OAuth token is missing. Click Hold or login first, then refresh again.", "warning");
+        }
+        addDebug("SUMMARY_DIRECT_SKIP", "OAuth token missing. Cached/query values used.");
+        return;
+      }
+
+      if (!CONFIG.conversationId) {
+        throw new Error("conversationId is required to refresh hold summary.");
+      }
+
+      addDebug("SUMMARY_DIRECT_START", "Fetching message conversation directly from Genesys. holdDetailsApiUrl is not configured.");
+
+      const messageConversation = await getMessageConversationDirect(token, CONFIG.conversationId);
+
+      const fullRefs = collectMessageRefsFromConversation(messageConversation, "FULL_INTERACTION");
+      const currentRefs = collectMessageRefsFromConversation(messageConversation, "CURRENT_SESSION");
+
+      addDebug("SUMMARY_REFS", "fullRefs=" + fullRefs.length + " | currentRefs=" + currentRefs.length);
+
+      const allRefs = dedupeMessageRefs([].concat(fullRefs || [], currentRefs || []));
+      const allItems = await readTranscriptItemsDirect(token, CONFIG.conversationId, allRefs, "FULL_AND_CURRENT");
+      const currentIds = new Set((currentRefs || []).map(function (ref) { return ref.messageId; }));
+      const fullItems = allItems;
+      const currentItems = allItems.filter(function (item) { return currentIds.has(item.messageId); });
+
+      const fullHold = calculateHoldDetailsFromTranscript(fullItems);
+      const currentHold = calculateHoldDetailsFromTranscript(currentItems);
+
+      const localSummary = normalizeSummary(latestSummary || loadCachedSummary() || buildInitialSummaryFromParams());
+      const localAttemptCount = getAttemptStartedCount();
+
+      const data = {
+        CurrentSession_Hold_TotalCount: Math.max(currentHold.Hold_TotalCount, localSummary.currentHoldCount, localAttemptCount),
+        CurrentSession_Hold_TotalHHMMSS:
+          parseHHMMSSToSeconds(localSummary.currentHoldTime) > parseHHMMSSToSeconds(currentHold.Hold_TotalHHMMSS)
+            ? localSummary.currentHoldTime
+            : currentHold.Hold_TotalHHMMSS,
+        CurrentSession_Hold_Total_Hours_Segment_List:
+          mergeSegmentList(currentHold.Hold_Total_Hours_Segment_List, localSummary.currentSegments),
+        Hold_TotalCount: Math.max(fullHold.Hold_TotalCount, localSummary.totalHoldCount, localAttemptCount),
+        Hold_TotalHHMMSS:
+          parseHHMMSSToSeconds(localSummary.totalHoldTime) > parseHHMMSSToSeconds(fullHold.Hold_TotalHHMMSS)
+            ? localSummary.totalHoldTime
+            : fullHold.Hold_TotalHHMMSS,
+        Hold_Total_Hours_Segment_List:
+          mergeSegmentList(fullHold.Hold_Total_Hours_Segment_List, localSummary.holdHistory),
+        averageHoldTime:
+          parseHHMMSSToSeconds(localSummary.averageHoldTime) > parseHHMMSSToSeconds(fullHold.averageHoldTime)
+            ? localSummary.averageHoldTime
+            : fullHold.averageHoldTime,
+        longestHoldTime:
+          parseHHMMSSToSeconds(localSummary.longestHoldTime) > parseHHMMSSToSeconds(fullHold.longestHoldTime)
+            ? localSummary.longestHoldTime
+            : fullHold.longestHoldTime
+      };
+
+      applySummary(data);
+      addDebug(
+        "SUMMARY_DIRECT_OK",
+        "Current=" + data.CurrentSession_Hold_TotalCount +
+        " | CurrentTime=" + data.CurrentSession_Hold_TotalHHMMSS +
+        " | Total=" + data.Hold_TotalCount +
+        " | TotalTime=" + data.Hold_TotalHHMMSS +
+        " | Segments=" + (data.Hold_Total_Hours_Segment_List || "none")
+      );
+
+      try { sessionStorage.removeItem(getAuthRecoveryStateKey()); } catch (_) {}
+
+      if (showStatus) {
+        setStatus("Hold summary refreshed successfully from Genesys conversation messages.", "success");
+        hideStatusSoon();
+      }
+    }
+
+    async function getMessageConversationDirect(token, conversationId) {
+      const endpoint = API_BASE + "/api/v2/conversations/messages/" + encodeURIComponent(conversationId);
+      addDebug("SUMMARY_CONVERSATION_GET", endpoint.replace(API_BASE, ""));
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        if (response.status === 401) {
+          sessionStorage.removeItem("gc_access_token");
+          sessionStorage.removeItem("gc_token_expires_at");
+        }
+        throw new Error("Message conversation fetch failed. HTTP " + response.status + " - " + text);
+      }
+      try { return text ? JSON.parse(text) : {}; } catch (_) { return {}; }
+    }
+
+    function collectMessageRefsFromConversation(messageConversation, mode) {
+      const participants = Array.isArray(messageConversation && messageConversation.participants)
+        ? messageConversation.participants
+        : [];
+      const refs = [];
+      const targetAgentParticipantId = safeString(CONFIG.agentParticipantId || CONFIG.participantId);
+      const targetCustomerCommunicationId = safeString(CONFIG.customerCommunicationId || CONFIG.communicationId);
+
+      participants.forEach(function (participant) {
+        if (!participant || safeString(participant.purpose).toLowerCase() !== "agent") return;
+
+        const participantId = safeString(participant.id);
+        const peer = safeString(participant.peer);
+
+        if (mode === "CURRENT_SESSION") {
+          if (targetCustomerCommunicationId && peer !== targetCustomerCommunicationId) return;
+
+          if (CONFIG.isCustomerBasedHoldCalculation === false) {
+            if (!targetAgentParticipantId || participantId !== targetAgentParticipantId) return;
+          }
+        }
+
+        const messages = Array.isArray(participant.messages) ? participant.messages : [];
+        messages.forEach(function (message) {
+          const messageId = safeString(message.messageId || message.id);
+          if (!messageId || messageId === CONFIG.conversationId) return;
+          refs.push({
+            messageId: messageId,
+            participantId: participantId,
+            participantName: safeString(participant.name),
+            participantPurpose: safeString(participant.purpose),
+            participantPeer: peer,
+            messageTime: safeString(message.messageTime),
+            messageStatus: safeString(message.messageStatus)
+          });
+        });
+      });
+
+      return dedupeMessageRefs(refs);
+    }
+
+    function dedupeMessageRefs(refs) {
+      const seen = new Set();
+      const output = [];
+      (refs || []).forEach(function (ref) {
+        if (!ref || !ref.messageId || seen.has(ref.messageId)) return;
+        seen.add(ref.messageId);
+        output.push(ref);
+      });
+      return output;
+    }
+
+    async function readTranscriptItemsDirect(token, conversationId, refs, label) {
+      const items = [];
+      let failed = 0;
+
+      for (const ref of refs || []) {
+        try {
+          let detail = messageDetailCache.get(ref.messageId);
+          if (!detail) {
+            detail = await getConversationMessageDirect(token, conversationId, ref.messageId);
+            messageDetailCache.set(ref.messageId, detail);
+          }
+          const item = buildTranscriptItemFromMessage(detail, ref);
+          if (item.messageText) items.push(item);
+        } catch (err) {
+          failed += 1;
+          const text = err && err.message ? err.message : String(err);
+          addDebug("SUMMARY_MESSAGE_READ_FAILED", label + " | messageId=" + ref.messageId + " | " + text);
+          if (text.includes("HTTP 429")) {
+            const match = text.match(/Retry the request in \[(\d+)\] seconds/i);
+            const waitSeconds = match ? Math.max(2, Number(match[1])) : 15;
+            summaryRefreshBlockedUntil = Date.now() + (waitSeconds * 1000);
+            addDebug("SUMMARY_RATE_LIMIT_STOP", "Stopped remaining message-detail reads. retryAfterSeconds=" + waitSeconds);
+            break;
+          }
+        }
+      }
+
+      addDebug("SUMMARY_MESSAGE_READ", label + " | refs=" + (refs || []).length + " | items=" + items.length + " | failed=" + failed);
+      return items;
+    }
+
+    async function getConversationMessageDirect(token, conversationId, messageId) {
+      const endpoint = API_BASE + "/api/v2/conversations/messages/" + encodeURIComponent(conversationId) +
+        "/messages/" + encodeURIComponent(messageId) + "?useNormalizedMessage=true";
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        if (response.status === 401) {
+          sessionStorage.removeItem("gc_access_token");
+          sessionStorage.removeItem("gc_token_expires_at");
+        }
+        throw new Error("Message detail fetch failed. HTTP " + response.status + " - " + text);
+      }
+      try { return text ? JSON.parse(text) : {}; } catch (_) { return {}; }
+    }
+
+    function buildTranscriptItemFromMessage(messageDetail, messageRef) {
+      const messageText = extractBestMessageText(messageDetail);
+      const timestamp =
+        safeString(messageDetail && messageDetail.timestamp) ||
+        safeString(messageDetail && messageDetail.normalizedMessage && messageDetail.normalizedMessage.channel && messageDetail.normalizedMessage.channel.time) ||
+        safeString(messageRef && messageRef.messageTime) ||
+        extractFirstValueByKeys(messageDetail, ["timestamp", "time", "createdDate", "createdDateTime", "messageTime"]);
+
+      return {
+        messageText: messageText,
+        timestamp: timestamp,
+        messageId: safeString(messageRef && messageRef.messageId),
+        participantId: safeString(messageRef && messageRef.participantId),
+        participantPeer: safeString(messageRef && messageRef.participantPeer)
+      };
+    }
+
+    function extractBestMessageText(messageDetail) {
+      return safeString(messageDetail && messageDetail.textBody) ||
+        safeString(messageDetail && messageDetail.normalizedMessage && messageDetail.normalizedMessage.text) ||
+        extractMessageTextFallback(messageDetail);
+    }
+
+    function extractMessageTextFallback(messageDetail) {
+      const textParts = [];
+
+      function walk(node, keyName) {
+        if (node === null || node === undefined) return;
+        if (typeof node === "string") {
+          const lowerKey = safeString(keyName).toLowerCase();
+          if (
+            lowerKey.includes("text") ||
+            lowerKey.includes("body") ||
+            lowerKey.includes("message") ||
+            lowerKey.includes("content")
+          ) {
+            const clean = safeString(node);
+            if (clean) textParts.push(clean);
+          }
+          return;
+        }
+        if (Array.isArray(node)) {
+          node.forEach(function (item) { walk(item, keyName); });
+          return;
+        }
+        if (typeof node === "object") {
+          Object.keys(node).forEach(function (key) { walk(node[key], key); });
+        }
+      }
+
+      walk(messageDetail, "");
+      return Array.from(new Set(textParts)).join(" | ");
+    }
+
+    function extractFirstValueByKeys(obj, keysToFind) {
+      const lowerKeys = (keysToFind || []).map(function (key) { return safeString(key).toLowerCase(); });
+      let found = "";
+
+      function walk(node) {
+        if (found || node === null || node === undefined) return;
+        if (Array.isArray(node)) {
+          node.forEach(function (item) { if (!found) walk(item); });
+          return;
+        }
+        if (typeof node === "object") {
+          Object.keys(node).forEach(function (key) {
+            if (found) return;
+            const val = node[key];
+            if (lowerKeys.includes(key.toLowerCase())) {
+              if (["string", "number", "boolean"].includes(typeof val)) {
+                found = safeString(val);
+                return;
+              }
+            }
+            walk(val);
+          });
+        }
+      }
+
+      walk(obj);
+      return found;
+    }
+
+    function calculateHoldDetailsFromTranscript(transcriptItems) {
+      let openHoldStart = null;
+      let totalHoldSeconds = 0;
+      let totalHoldCount = 0;
+      let longestHoldSeconds = 0;
+      const segmentList = [];
+
+      const holdTag = safeString(CONFIG.holdMessageText).toLowerCase();
+      const resumeTag = safeString(CONFIG.resumeMessageText).toLowerCase();
+
+      const sortedItems = (transcriptItems || []).slice().sort(function (a, b) {
+        const da = parseFlexibleDate(a.timestamp);
+        const db = parseFlexibleDate(b.timestamp);
+        return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+      });
+
+      sortedItems.forEach(function (item) {
+        const msg = safeString(item.messageText).toLowerCase();
+        const msgTime = parseFlexibleDate(item.timestamp);
+        if (!msgTime) return;
+
+        const isHold = holdTag && msg.includes(holdTag);
+        const isResume = resumeTag && msg.includes(resumeTag);
+
+        if (isHold) {
+          openHoldStart = msgTime;
+          return;
+        }
+
+        if (isResume) {
+          if (!openHoldStart) return;
+          const seconds = Math.max(0, Math.floor((msgTime.getTime() - openHoldStart.getTime()) / 1000));
+          totalHoldCount += 1;
+          totalHoldSeconds += seconds;
+          if (seconds > longestHoldSeconds) longestHoldSeconds = seconds;
+          segmentList.push(hhmmss(seconds));
+          openHoldStart = null;
+        }
+      });
+
+      const averageHoldSeconds = totalHoldCount > 0 ? Math.floor(totalHoldSeconds / totalHoldCount) : 0;
+
+      return {
+        Hold_TotalHHMMSS: hhmmss(totalHoldSeconds),
+        Hold_TotalSeconds: totalHoldSeconds,
+        Hold_TotalCount: totalHoldCount,
+        Hold_Total_Hours_Segment_List: segmentList.join(", "),
+        averageHoldTime: hhmmss(averageHoldSeconds),
+        longestHoldTime: hhmmss(longestHoldSeconds)
+      };
+    }
+
+    function parseFlexibleDate(value) {
+      const text = safeString(value);
+      if (!text) return null;
+      let normalized = text.replace(/\s+at\s+/i, " ");
+      normalized = normalized.replace(/GMT([+-])(\d{1,2})(?!:)/i, function (_, sign, hour) {
+        return "GMT" + sign + String(hour).padStart(2, "0") + ":00";
+      });
+      let d = new Date(normalized);
+      if (!Number.isNaN(d.getTime())) return d;
+      d = new Date(text);
+      if (!Number.isNaN(d.getTime())) return d;
+      return null;
+    }
+
+    /************************************************************
+     * Timer control
+     ************************************************************/
+    function startMaxHoldTimer() {
+      if (!CONFIG.maxHoldTime) return;
+      stopMaxHoldTimer(false);
+
+      activeTimer = {
+        startedAt: Date.now(),
+        expiresAt: Date.now() + (CONFIG.maxHoldTime * 1000),
+        totalSeconds: CONFIG.maxHoldTime,
+        autoResumeSent: false
+      };
+      try { localStorage.setItem(getTimerStateKey(), JSON.stringify(activeTimer)); } catch (_) {}
+      tickTimer();
+      holdTimerInterval = setInterval(tickTimer, 1000);
+    }
+
+    function restoreMaxHoldTimer() {
+      try {
+        const raw = localStorage.getItem(getTimerStateKey());
+        if (!raw) return;
+        const timer = JSON.parse(raw);
+        if (!timer || !timer.expiresAt || Date.now() >= Number(timer.expiresAt)) {
+          localStorage.removeItem(getTimerStateKey());
+          return;
+        }
+        activeTimer = timer;
+        isOnHold = true;
+        if (applyCentralAutoResumeIfPresent()) return;
+        tickTimer();
+        holdTimerInterval = setInterval(tickTimer, 1000);
+      } catch (_) {}
+    }
+
+    function getOwnActiveCentralHoldRecord() {
+      const record = readOwnCentralHoldRecord();
+      if (!record) return null;
+      if (record.status !== "HOLD" && record.status !== "HOLD_EXCEEDED") return null;
+      if (!record.holdStartTimeMs) return null;
+      return record;
+    }
+
+    function applyVisibleTimerFromCentralRecord(source) {
+      const record = getOwnActiveCentralHoldRecord();
+
+      // If another HoldResume iframe/action page has completed Resume, the visible
+      // Hold Info page must reset immediately instead of keeping an old local timer.
+      if (!record) {
+        if (isOnHold || activeTimer) {
+          isOnHold = false;
+          persistButtonState();
+          stopMaxHoldTimer(true);
+          updateButtonState();
+          addDebug("VISIBLE_TIMER_RESET_FROM_CENTRAL", "source=" + safeString(source));
+        }
+        return false;
+      }
+
+      const startMs = Number(record.holdStartTimeMs || 0);
+      if (!Number.isFinite(startMs) || startMs <= 0) return false;
+
+      const maxSeconds = Math.max(0, Number(record.maxHoldTime || CONFIG.maxHoldTime || 0));
+      const totalSeconds = maxSeconds || Math.max(1, Math.floor((Date.now() - startMs) / 1000));
+      const expiresAt = maxSeconds ? (startMs + (maxSeconds * 1000)) : (Date.now() + 1000);
+
+      const currentKey = activeTimer ? String(activeTimer.startedAt || "") + "|" + String(activeTimer.expiresAt || "") : "";
+      const centralKey = String(startMs) + "|" + String(expiresAt);
+
+      isOnHold = true;
+      persistButtonState();
+
+      // Adopt the timer started by the Agent Script action iframe. This keeps the
+      // visible Hold Info page timer running even when that page was not reloaded.
+      if (!activeTimer || currentKey !== centralKey) {
+        activeTimer = {
+          startedAt: startMs,
+          expiresAt: expiresAt,
+          totalSeconds: totalSeconds,
+          autoResumeSent: record.resumeSent === true
+        };
+        try { localStorage.setItem(getTimerStateKey(), JSON.stringify(activeTimer)); } catch (_) {}
+        if (holdTimerInterval) clearInterval(holdTimerInterval);
+        holdTimerInterval = setInterval(tickTimer, 1000);
+        addDebug("VISIBLE_TIMER_ADOPTED_FROM_CENTRAL", "source=" + safeString(source) + " | startedAt=" + startMs + " | maxHoldTime=" + totalSeconds);
+      }
+
+      tickTimer();
+      updateButtonState();
+      return true;
+    }
+
+
+    let summaryRefreshFromTimerHandle = null;
+    function scheduleSummaryRefreshFromTimer(source) {
+      try {
+        if (summaryRefreshFromTimerHandle) clearTimeout(summaryRefreshFromTimerHandle);
+        summaryRefreshFromTimerHandle = setTimeout(async function () {
+          try {
+            applyVisibleTimerFromCentralRecord(source || "TIMER_ACTION");
+
+            // Wait until HOLD/RESUME storage events become quiet, then perform one
+            // cached/single-flight refresh. Message details already read in this page
+            // session are reused, so only newly-created HOLD/RESUME messages are fetched.
+            if (Date.now() < summaryRefreshBlockedUntil) {
+              addDebug("SUMMARY_REFRESH_FROM_TIMER_ACTION_THROTTLED", safeString(source));
+              return;
+            }
+
+            await refreshHoldSummary(false);
+            addDebug("SUMMARY_REFRESH_FROM_TIMER_ACTION_OK", safeString(source) + " | debounced transcript sync completed.");
+          } catch (err) {
+            addDebug("SUMMARY_REFRESH_FROM_TIMER_ACTION_FAILED", err && err.message ? err.message : String(err));
+          }
+        }, 2500);
+      } catch (_) {}
+    }
+
+    function startVisibleTimerSync() {
+      setInterval(function () {
+        applyVisibleTimerFromCentralRecord("INTERVAL");
+      }, 1000);
+
+      window.addEventListener("storage", function (event) {
+        if (event && (event.key === GCB_ACTIVE_HOLDS_KEY || event.key === getTimerStateKey())) {
+          applyVisibleTimerFromCentralRecord("STORAGE");
+          if (event.key === GCB_ACTIVE_HOLDS_KEY) scheduleSummaryRefreshFromTimer("STORAGE_TIMER_ACTION");
+        }
+      });
+
+      try {
+        if (typeof BroadcastChannel !== "undefined") {
+          const channel = new BroadcastChannel(GCB_HOLD_CHANNEL);
+          channel.onmessage = function () {
+            applyVisibleTimerFromCentralRecord("BROADCAST");
+            scheduleSummaryRefreshFromTimer("BROADCAST_TIMER_ACTION");
+          };
+        }
+      } catch (_) {}
+    }
+
+    function resetTimerIndicator(statusText) {
+      const card = document.getElementById("timerIndicatorCard");
+      const fill = document.getElementById("timerProgressFill");
+      if (card) card.className = "metric-card timer-indicator-card";
+      if (fill) fill.style.width = "0%";
+      setText("timerRemainingValue", "00:00");
+      setText("timerIndicatorStatus", statusText || "Timer not active");
+      setText("timerElapsedText", "00:00");
+      setText("timerMaxText", CONFIG.maxHoldTime ? mmss(CONFIG.maxHoldTime) : "00:00");
+    }
+
+    function stopMaxHoldTimer(clearStorage) {
+      if (holdTimerInterval) {
+        clearInterval(holdTimerInterval);
+        holdTimerInterval = null;
+      }
+      activeTimer = null;
+      stopAttentionAlert();
+      document.getElementById("holdTimeCard").classList.remove("timer-active");
+      setText("timerSubText", "Current session total");
+      resetTimerIndicator("Timer not active");
+      // If the page was blinking because maxHoldTime was reached, clear that duration alert
+      // once Resume is clicked/sent. Count-limit alerts are recalculated separately.
+      if (persistentLimitAlert && persistentLimitAlert.type === "warning") {
+        clearPersistentAlert();
+      }
+      if (clearStorage !== false) {
+        try { localStorage.removeItem(getTimerStateKey()); } catch (_) {}
+      }
+    }
+
+    function tickTimer() {
+      if (!activeTimer) return;
+      const remaining = Math.max(0, Math.ceil((Number(activeTimer.expiresAt) - Date.now()) / 1000));
+      const rawElapsed = Math.max(0, Number(activeTimer.totalSeconds || 0) - remaining);
+      const totalSeconds = Math.max(1, Number(activeTimer.totalSeconds || 0));
+      const elapsed = Math.max(0, Math.min(totalSeconds, rawElapsed));
+      const usedPercent = Math.max(0, Math.min(100, (elapsed / totalSeconds) * 100));
+
+      document.getElementById("holdTimeCard").classList.add("timer-active");
+      setText("currentHoldTime", hhmmss(elapsed));
+      setText("timerSubText", "Current active hold elapsed time");
+
+      const card = document.getElementById("timerIndicatorCard");
+      const fill = document.getElementById("timerProgressFill");
+      if (card) {
+        let timerClass = "metric-card timer-indicator-card active";
+        if (remaining <= 0 || remaining <= 15) timerClass += " danger";
+        else if (remaining <= 60) timerClass += " warning";
+        card.className = timerClass;
+      }
+      if (fill) fill.style.width = usedPercent + "%";
+
+      // Keep the visible Hold Info timer consistent with holdtimer.html.
+      // Both widgets now show elapsed hold time increasing from 00:00 to maxHoldTime.
+      setText("timerRemainingValue", mmss(elapsed));
+      setText("timerElapsedText", mmss(elapsed));
+      setText("timerMaxText", mmss(totalSeconds));
+
+      if (remaining <= 0) {
+        setText("timerRemainingValue", mmss(totalSeconds));
+        setText("timerElapsedText", mmss(totalSeconds));
+        if (CONFIG.autoResumeEnabled) {
+          setText("timerIndicatorStatus", "Time reached. Auto resume is sending...");
+        } else {
+          setText("timerIndicatorStatus", "Time limit reached - manual Resume required");
+        }
+        if (holdTimerInterval) {
+          clearInterval(holdTimerInterval);
+          holdTimerInterval = null;
+        }
+        autoResumeOnTimeout();
+        return;
+      }
+
+      if (remaining <= 15) {
+        setText("timerIndicatorStatus", CONFIG.autoResumeEnabled ? "Critical: auto resume soon" : "Critical: manual resume required soon");
+      } else if (remaining <= 60) {
+        setText("timerIndicatorStatus", "Customer on hold");
+      } else {
+        setText("timerIndicatorStatus", CONFIG.autoResumeEnabled ? "Hold active - auto resume at max time" : "Hold active - manual Resume at max time");
+      }
+    }
+
+    async function autoResumeOnTimeout() {
+      if (!isOnHold || (activeTimer && activeTimer.autoResumeSent)) return;
+      if (activeTimer) activeTimer.autoResumeSent = true;
+
+      if (!CONFIG.autoResumeEnabled) {
+        const durationMessage = "Maximum hold duration reached. Please click Resume to continue the chat.";
+        updateCentralHoldRecordStatus("HOLD_EXCEEDED", "LOCAL_TIMER_MAX_HOLD_TIME");
+        startAttentionAlert(durationMessage, "warning", "SIVAKUMAR - RAKBANK");
+        setStatus(durationMessage, "warning");
+        addDebug("HOLD_DURATION_REACHED_MANUAL_RESUME", "maxHoldTime=" + CONFIG.maxHoldTime);
+        updateButtonState();
+        return;
+      }
+
+      showPersistentAlert(CONFIG.holdMaxTimeAlertText + " (" + CONFIG.maxHoldTime + " seconds). Auto resume is being sent...", "warning");
+      setStatus("Maximum hold duration reached. Auto resume is being sent...", "warning");
+      addDebug("AUTO_RESUME_START", "maxHoldTime=" + CONFIG.maxHoldTime);
+
+      try {
+        await sendMessageToConversation("RESUME", CONFIG.resumeMessageText);
+        updateCentralHoldRecordStatus("RESUMED_AUTO", "LOCAL_TIMER_MAX_HOLD_TIME");
+        isOnHold = false;
+        persistButtonState();
+        stopMaxHoldTimer(true);
+        updateButtonState();
+        await sleep(CONFIG.autoRefreshDelayMs);
+        await refreshHoldSummary(false);
+
+        // After auto-resume, if the resume completed the final allowed hold pair,
+        // show the maximum-attempts alert as the final state instead of the duration warning.
+        if (getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
+          const maxMessage = getMaxAttemptsAlertMessage();
+          startAttentionAlert(maxMessage, "error", "⛔ Max Hold Reached");
+          setStatus("Maximum hold attempts reached. Further Hold is not allowed.", "error");
+        } else {
+          const durationMessage = CONFIG.holdMaxTimeAlertText + " (" + CONFIG.maxHoldTime + " seconds). " + CONFIG.autoResumeSentText;
+          startAttentionAlert(durationMessage, "warning", "⚠️ Auto Resume Sent");
+          setStatus("Auto resume sent because maximum hold duration was reached.", "success");
+        }
+        hideStatusSoon();
+      } catch (err) {
+        setStatus("Auto resume failed: " + err.message, "error");
+        addDebug("AUTO_RESUME_FAILED", err.message);
+        updateButtonState();
+      }
+    }
+
+    async function refreshHoldSummaryAfterAction(action) {
+      const expectedCount = getAttemptStartedCount();
+      const localBeforeRefresh = normalizeSummary(latestSummary || loadCachedSummary() || buildInitialSummaryFromParams());
+      const maxTries = action === "RESUME" ? 2 : 2;
+      let lastError = null;
+
+      for (let attempt = 1; attempt <= maxTries; attempt++) {
+        await sleep(attempt === 1 ? CONFIG.autoRefreshDelayMs : 1500);
+        try {
+          await refreshHoldSummary(false);
+          lastError = null;
+        } catch (err) {
+          lastError = err;
+          const retryText = err.message || String(err);
+          addDebug("SUMMARY_RETRY_FAILED", "action=" + action + " | attempt=" + attempt + " | " + retryText);
+          if (retryText.includes("HTTP 429")) break;
+        }
+
+        const visibleCount = getCurrentSessionCount();
+        addDebug("SUMMARY_RETRY_CHECK", "action=" + action + " | attempt=" + attempt + " | visibleCount=" + visibleCount + " | expectedCount=" + expectedCount);
+
+        if (!lastError && visibleCount >= expectedCount) return;
+
+        // Genesys transcript can be delayed immediately after POST. Do not replace a good local summary with zero/stale values.
+        if (!lastError && visibleCount < expectedCount) {
+          applySummary(localBeforeRefresh);
+        }
+      }
+
+      if (lastError) {
+        applySummary(localBeforeRefresh);
+        setStatus("Message sent, but latest hold details could not be refreshed yet. Cached/local values are shown.", "warning");
+        addDebug("SUMMARY_AFTER_ACTION_DEFERRED", lastError.message || String(lastError));
+        return;
+      }
+
+      applySummary(localBeforeRefresh);
+      addDebug("SUMMARY_AFTER_ACTION_STALE_KEEP_LOCAL", "action=" + action + " | expectedCount=" + expectedCount);
+    }
+
+    /************************************************************
+     * External Agent Script action support
+     *
+     * externalAction=HOLD or externalAction=RESUME allows the main
+     * Agent Script button to trigger the same hold/resume logic while
+     * this page continues to display the detailed Hold Info summary.
+     ************************************************************/
+    function getExternalActionStateKey() {
+      const rawId = CONFIG.externalActionRequestId || [
+        CONFIG.conversationId || "NO_CONV",
+        CONFIG.externalAction || "NONE",
+        CONFIG.agentCommunicationId || CONFIG.communicationId || "NO_COMM"
+      ].join("|");
+      return "GCB_HR_EXTERNAL_ACTION_" + sanitizeKey(rawId);
+    }
+
+    function getExternalActionState() {
+      try {
+        const raw = localStorage.getItem(getExternalActionStateKey());
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setExternalActionState(status, detail) {
+      try {
+        localStorage.setItem(getExternalActionStateKey(), JSON.stringify({
+          status: status,
+          detail: safeString(detail),
+          action: CONFIG.externalAction,
+          requestId: CONFIG.externalActionRequestId,
+          savedAt: Date.now(),
+          savedAtUtc: new Date().toISOString()
+        }));
+      } catch (_) {}
+    }
+
+    function isExternalActionRequested() {
+      return CONFIG.externalAction === "HOLD" || CONFIG.externalAction === "RESUME";
+    }
+
+    /************************************************************
+     * Button click loop
+     ************************************************************/
+    async function processHoldResumeAction(action, triggerSource) {
+      if (isProcessing) return { skipped: true, reason: "PROCESSING" };
+
+      action = safeString(action).toUpperCase();
+      if (action !== "HOLD" && action !== "RESUME") {
+        throw new Error("Invalid hold action: " + action);
+      }
+
+      const messageText = action === "HOLD" ? CONFIG.holdMessageText : CONFIG.resumeMessageText;
+
+      if (action === "HOLD") {
+        requestBrowserNotificationPermissionIfPossible(triggerSource === "EXTERNAL" ? "EXTERNAL_HOLD" : "HOLD_CLICK");
+      }
+
+      if (action === "HOLD" && getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
+        const validationMessage = "⚠️  ⛔ You have already reached the maximum allowed hold attempts. ⏱ (" + getEffectiveHoldCount() + " / " + CONFIG.maxHoldAttempts + ")";
+        startAttentionAlert(validationMessage, "error", "⛔ Max Hold Reached");
+        setStatus(validationMessage, "error");
+        addDebug("VALIDATION_BLOCK", "Max hold attempts reached. trigger=" + safeString(triggerSource) + " | effectiveCount=" + getEffectiveHoldCount() + " | max=" + CONFIG.maxHoldAttempts);
+        updateButtonState();
+        return { blocked: true, reason: "MAX_ATTEMPTS" };
+      }
+
+      if (action === "RESUME") {
+        const record = readOwnCentralHoldRecord();
+        if (record && (record.status === "RESUME_IN_PROGRESS" || record.status === "RESUMED_AUTO" || record.status === "RESUMED_MANUAL" || record.resumeSent === true)) {
+          addDebug("MANUAL_RESUME_SKIPPED", "Resume already handled or in progress by central/local record. trigger=" + safeString(triggerSource) + " | status=" + safeString(record.status));
+          applyCentralAutoResumeIfPresent();
+          return { skipped: true, reason: "RESUME_ALREADY_HANDLED" };
+        }
+        // Lock the central hold record before sending the manual Resume so the index monitor cannot also send Resume.
+        updateCentralHoldRecordStatus("RESUME_IN_PROGRESS", triggerSource === "EXTERNAL" ? "EXTERNAL_RESUME_START" : "MANUAL_RESUME_CLICK_START");
+      }
+
+      isProcessing = true;
+      updateButtonState();
+      setStatus(action === "HOLD" ? "Sending Hold message..." : "Sending Resume message...", "info");
+
+      try {
+        const result = await sendMessageToConversation(action, messageText);
+        if (result && result.redirected) return { redirected: true };
+
+        if (action === "HOLD") {
+          const startedCount = markHoldAttemptStarted();
+          applyLocalHoldStartedSummary(startedCount);
+          isOnHold = true;
+          persistButtonState();
+          startMaxHoldTimer();
+          saveCentralHoldRecord();
+          setStatus(triggerSource === "EXTERNAL" ? "Hold message sent from Agent Script. Timer started." : "Hold message sent. Timer started.", "success");
+        } else {
+          const resumeElapsedSeconds = getActiveHoldElapsedSecondsBeforeStop();
+          isOnHold = false;
+          persistButtonState();
+          stopMaxHoldTimer(true);
+          updateCentralHoldRecordStatus("RESUMED_MANUAL", triggerSource === "EXTERNAL" ? "EXTERNAL_RESUME" : "MANUAL_RESUME_CLICK");
+          applyLocalResumeCompletedSummary(resumeElapsedSeconds);
+          setStatus(triggerSource === "EXTERNAL" ? "Resume message sent from Agent Script. Timer stopped." : "Resume message sent. Timer stopped.", "success");
+        }
+
+        updateButtonState();
+        await refreshHoldSummaryAfterAction(action);
+        hideStatusSoon();
+        return { ok: true, action: action };
+      } catch (err) {
+        if (action === "RESUME") {
+          // Manual Resume failed, unlock the central record so the central monitor can still retry if needed.
+          updateCentralHoldRecordStatus("HOLD", "RESUME_FAILED_UNLOCK");
+        }
+        setStatus(err.message || String(err), "error");
+        addDebug(triggerSource === "EXTERNAL" ? "EXTERNAL_ACTION_FAILED" : "CLICK_FAILED", err.message || String(err));
+        throw err;
+      } finally {
+        isProcessing = false;
+        updateButtonState();
+      }
+    }
+
+    async function handleHoldResumeClick() {
+      const action = isOnHold ? "RESUME" : "HOLD";
+      return processHoldResumeAction(action, "BUTTON");
+    }
+
+    async function processExternalActionIfNeeded() {
+      if (!isExternalActionRequested()) return;
+
+      const previous = getExternalActionState();
+      if (previous && (previous.status === "DONE" || previous.status === "IN_PROGRESS")) {
+        addDebug("EXTERNAL_ACTION_DUPLICATE_SKIP", "action=" + CONFIG.externalAction + " | status=" + safeString(previous.status) + " | requestId=" + (CONFIG.externalActionRequestId || "[auto]"));
+        if (previous.status === "DONE") {
+          setStatus("External " + CONFIG.externalAction + " action already processed.", "info");
+          hideStatusSoon();
+        }
+        return;
+      }
+
+      addDebug("EXTERNAL_ACTION_START", "action=" + CONFIG.externalAction + " | requestId=" + (CONFIG.externalActionRequestId || "[auto]") + " | displayActionButton=" + CONFIG.displayActionButton);
+      setExternalActionState("IN_PROGRESS", "Started");
+
+      try {
+        const result = await processHoldResumeAction(CONFIG.externalAction, "EXTERNAL");
+        if (result && result.redirected) return;
+        setExternalActionState("DONE", result && result.reason ? result.reason : "OK");
+        addDebug("EXTERNAL_ACTION_DONE", "action=" + CONFIG.externalAction);
+      } catch (err) {
+        // Clear failed state so a new requestId or a retry can process again.
+        try { localStorage.removeItem(getExternalActionStateKey()); } catch (_) {}
+        throw err;
+      }
+    }
+
+    async function initPage() {
+      const actionButton = document.getElementById("holdResumeBtn");
+      if (actionButton) {
+        actionButton.addEventListener("click", handleHoldResumeClick);
+        actionButton.style.display = "none";
+      }
+      addDebug("ACTION_BUTTON_REMOVED", "Hold/Resume button is removed from Hold Info page. Agent Script controls action using externalAction=HOLD/RESUME.");
+
+      const refreshButton = document.getElementById("refreshBtn");
+      if (refreshButton) {
+        refreshButton.style.display = "none";
+        refreshButton.addEventListener("click", async function () {
+          try {
+            applyCentralAutoResumeIfPresent();
+            setStatus("Refreshing hold summary...", "info");
+            await refreshHoldSummary(true);
+          } catch (err) {
+            setStatus(err.message || String(err), "error");
+          }
+        });
+      }
+
+      document.getElementById("debugBtn").addEventListener("click", function () {
+        const panel = document.getElementById("debugPanel");
+        if (!panel) return;
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+        } else {
+          panel.style.display = "block";
+          panel.textContent = getDebugParametersText();
+        }
+      });
+      if (CONFIG.visibleDebug) {
+        document.getElementById("debugBtn").style.display = "inline-block";
+        renderDebugPanel();
+      }
+
+      startCentralHoldHeartbeat();
+      startVisibleTimerSync();
+      window.addEventListener("storage", function (event) {
+        if (event && event.key === GCB_ACTIVE_HOLDS_KEY) {
+          applyCentralAutoResumeIfPresent();
+          applyVisibleTimerFromCentralRecord("STORAGE_CENTRAL");
+          scheduleSummaryRefreshFromTimer("STORAGE_CENTRAL_TIMER_ACTION");
+        }
+      });
+      try {
+        if (typeof BroadcastChannel !== "undefined") {
+          const channel = new BroadcastChannel(GCB_HOLD_CHANNEL);
+          channel.onmessage = function () {
+            applyCentralAutoResumeIfPresent();
+            applyVisibleTimerFromCentralRecord("BROADCAST_CENTRAL");
+            scheduleSummaryRefreshFromTimer("BROADCAST_CENTRAL_TIMER_ACTION");
+          };
+        }
+      } catch (_) {}
+
+      setText("maxHoldAttempts", CONFIG.maxHoldAttempts);
+      setText("maxHoldAttemptsSub", CONFIG.maxHoldAttempts);
+      resetTimerIndicator("Timer not active");
+      isInitialSummaryLoading = true;
+      updateButtonState();
+
+      const code = getParam("code", "");
+      if (code) {
+        setStatus("OAuth callback received. Completing login...", "info");
+        await handleOAuthCallback(code);
+        addDebug("OAUTH_CALLBACK_OK", "Token received after login/MFA. Reloading original HoldResume page.");
+        const original = sessionStorage.getItem(STORAGE_ORIGINAL_URL) || (window.location.origin + window.location.pathname);
+        window.location.replace(original.replace(/[?&]code=[^&]+/, ""));
+        return;
+      }
+
+      restoreButtonState();
+      restoreMaxHoldTimer();
+      applySummary(loadCachedSummary() || buildInitialSummaryFromParams());
+      applyVisibleTimerFromCentralRecord("INIT_AFTER_SUMMARY");
+
+      if (!CONFIG.conversationId) {
+        isInitialSummaryLoading = false;
+        setStatus("conversationId is missing. Hold/Resume cannot be sent until the Agent Screen passes conversationId.", "error");
+        updateButtonState();
+        return;
+      }
+
+      const hasToken = !!getAccessToken();
+      if (hasToken) {
+        try {
+          await loadParticipantConfig(getAccessToken());
+          setText("maxHoldAttempts", CONFIG.maxHoldAttempts);
+          setText("maxHoldAttemptsSub", CONFIG.maxHoldAttempts);
+        } catch (configError) {
+          addDebug("PARTICIPANT_CONFIG_LOAD_WARN", configError.message || String(configError));
+        }
+      }
+      if (!hasToken && CONFIG.clientId) {
+        isInitialSummaryLoading = false;
+        setStatus("OAuth/MFA is required. Opening secure login...", "info");
+        showPersistentAlert("OAuth/MFA is required. After login, this Hold Summary page will reopen automatically.", "warning");
+        await startPKCELogin();
+        return;
+      } else if (!hasToken && !CONFIG.clientId) {
+        isInitialSummaryLoading = false;
+        setStatus("clientId and OAuth token are missing. The page can show cached summary only. Pass clientId in the URL or open the GCB index page first.", "warning");
+      } else {
+        try {
+          setStatus("Loading latest hold details...", "info");
+          addDebug("INITIAL_SUMMARY_START", "Loading latest summary. tokenPresent=" + hasToken + " | clientIdPresent=" + !!CONFIG.clientId);
+          await refreshHoldSummary(false);
+          isInitialSummaryLoading = false;
+          setStatus("Ready.", "success");
+          hideStatusSoon();
+          addDebug("INITIAL_SUMMARY_OK", "Summary loaded. effectiveCount=" + getEffectiveHoldCount());
+        } catch (err) {
+          const errText = err.message || String(err);
+          addDebug("INITIAL_SUMMARY_FAILED", errText);
+
+          if (isAuthOrConversationAccessError(err)) {
+            const recoveryStarted = await recoverAuthAndReload("Initial hold summary validation failed: " + errText);
+            if (recoveryStarted) return;
+          }
+
+          isInitialSummaryLoading = false;
+          setStatus("Unable to load latest hold details. Cached values are shown: " + errText, "warning");
+          showPersistentAlert("Unable to refresh hold details. Cached values are shown. Hold action is still protected by local max-attempt validation.", "warning");
+        }
+      }
+
+      updateButtonState();
+      if (!isInitialSummaryLoading) {
+        await processExternalActionIfNeeded();
+      }
+      addDebug("INIT", "version=" + HR_VERSION + " | conversationId=" + CONFIG.conversationId + " | region=" + CONFIG.region + " | maxHoldAttempts=" + CONFIG.maxHoldAttempts + " | maxHoldTime=" + CONFIG.maxHoldTime + " | externalAction=" + CONFIG.externalAction);
+      renderDebugPanel();
+    }
+
+    window.addEventListener("load", function () {
+      initPage().catch(function (err) {
+        setStatus("Initialization failed: " + (err.message || String(err)), "error");
+      });
+    });
+  </script>
+</body>
+</html>

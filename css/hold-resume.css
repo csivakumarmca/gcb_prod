@@ -1,0 +1,559 @@
+/*
+ * Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
+ * Purpose: Shared Hold/Resume visual styling for summary, timer, alerts, and compact widgets.
+ *          Supports bank-style layout while keeping the embedded page space compact.
+ */
+:root {
+      --rak-blue: #004982;
+      --rak-blue-2: #0059a8;
+      --rak-green: #00843d;
+      --rak-green-soft: #eafaf0;
+      --rak-blue-soft: #eef6ff;
+      --rak-border: #cfd9e3;
+      --rak-page: #f4f6f8;
+      --rak-text: #001b3d;
+      --rak-danger: #b00020;
+      --rak-warning: #a86200;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 8px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--rak-page);
+      color: var(--rak-text);
+      font-size: 12px;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--rak-blue);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .info-dot {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--rak-blue);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rak-blue);
+      font-weight: 700;
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+
+    .action-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .hold-action-btn {
+      min-width: 120px;
+      height: 36px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--rak-green);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+    }
+
+    .hold-action-btn.resume {
+      background: var(--rak-blue-2);
+    }
+
+    .hold-action-btn:disabled {
+      background: #8a96a3;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .small-btn {
+      height: 30px;
+      border: 1px solid #b7c7d7;
+      background: #fff;
+      color: var(--rak-blue);
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+
+    .status-line {
+      display: none;
+      margin: 0 0 8px 0;
+      padding: 8px 10px;
+      border-radius: 3px;
+      border: 1px solid #cfe3ff;
+      background: #eef6ff;
+      color: var(--rak-blue);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status-line.success { display: block; border-color: #bee6cd; background: #eafaf0; color: #007036; }
+    .status-line.error { display: block; border-color: #f2b8c0; background: #fff0f2; color: var(--rak-danger); }
+    .status-line.warning { display: block; border-color: #f3d39a; background: #fff7e8; color: var(--rak-warning); }
+    .status-line.info { display: block; }
+
+    .limit-alert {
+      display: none;
+      border: 1px solid #f0b35d;
+      background: #fff7e8;
+      color: var(--rak-warning);
+      padding: 9px 12px;
+      margin: 8px 0 8px auto;
+      width: fit-content;
+      max-width: 62%;
+      min-width: 360px;
+      font-size: 12px;
+      line-height: 1.35;
+      border-radius: 0;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .limit-alert.show {
+      display: block;
+    }
+
+
+    @keyframes hrAlertBlink {
+      0%, 100% { box-shadow: 0 0 0 rgba(176,0,32,0); transform: translateZ(0); }
+      50% { box-shadow: 0 0 0 4px rgba(176,0,32,0.18); background: #ffe7eb; border-color: #b00020; color: #9b0000; }
+    }
+
+    .limit-alert.attention-blink {
+      animation: hrAlertBlink 0.9s ease-in-out infinite;
+    }
+
+    .limit-alert.warning {
+      border-color: #f3d39a;
+      background: #fff7e8;
+      color: var(--rak-warning);
+    }
+
+    .limit-alert.error {
+      border-color: #f0b35d;
+      background: #fff7e8;
+      color: var(--rak-warning);
+    }
+
+    .section {
+      border: 1px solid #b9d9c4;
+      background: #fff;
+      padding: 11px;
+      margin-bottom: 8px;
+    }
+
+    .section.overall {
+      border-color: #b7d4f2;
+    }
+
+    .grid-current {
+      display: grid;
+      grid-template-columns: 154px 1fr 1fr 1.55fr;
+      gap: 8px;
+      min-height: 162px;
+    }
+
+    .grid-overall {
+      display: grid;
+      grid-template-columns: 154px 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      min-height: 162px;
+    }
+
+    .side-card {
+      border: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .side-card.current {
+      background: var(--rak-green-soft);
+      color: var(--rak-green);
+    }
+
+    .side-card.overall {
+      background: #eef5fc;
+      color: var(--rak-blue-2);
+    }
+
+    .side-icon {
+      font-size: 26px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .side-title {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .metric-card {
+      border: 1px solid var(--rak-border);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .metric-card.limit-reached {
+      background: #f2a0b4;
+      border-color: #e58da4;
+    }
+
+    .metric-card.limit-reached .metric-label,
+    .metric-card.limit-reached .metric-sub {
+      color: #001b3d;
+    }
+
+    .metric-card.limit-reached .metric-value.green {
+      color: #007036;
+    }
+
+    .metric-icon {
+      height: 26px;
+      line-height: 26px;
+      font-size: 21px;
+      color: var(--rak-blue-2);
+      margin-bottom: 8px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #001b3d;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--rak-blue-2);
+      line-height: 1.15;
+    }
+
+    .metric-value.green {
+      color: var(--rak-green);
+    }
+
+    .metric-sub {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #4e5d6c;
+      line-height: 1.4;
+    }
+
+    .segments-card {
+      justify-content: center;
+    }
+
+    .segments-box {
+      width: 100%;
+      max-height: 64px;
+      overflow-y: auto;
+      border: 0;
+      margin-top: 10px;
+      padding: 2px 6px;
+      color: #25496d;
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: center;
+      word-break: break-word;
+    }
+
+
+
+    .timer-indicator-card {
+      position: relative;
+      padding: 12px 14px;
+    }
+
+    .timer-indicator-title {
+      color: #001b3d;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .timer-indicator-value {
+      color: var(--rak-blue-2);
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.05;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .timer-indicator-card.active .timer-indicator-value {
+      color: var(--rak-blue-2);
+    }
+
+    .timer-indicator-card.warning .timer-indicator-value {
+      color: #e69500;
+    }
+
+    .timer-indicator-status {
+      color: #25496d;
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 14px;
+    }
+
+    .timer-progress-wrap {
+      height: 14px;
+      width: calc(100% - 28px);
+      background: #eeeeee;
+      border: 1px solid #d9e3ee;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 7px 14px 8px 14px;
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #0a8f43;
+      border-radius: 999px;
+      transition: width 0.5s linear, background 0.3s ease;
+    }
+
+    .timer-indicator-card.active .timer-progress-fill {
+      background: #0a8f43;
+    }
+
+    .timer-indicator-card.danger .timer-progress-fill {
+      background: #c00000;
+    }
+
+    .timer-indicator-card.danger .timer-indicator-value {
+      color: #c00000;
+    }
+
+    .timer-indicator-card.warning .timer-progress-fill {
+      background: #e69500;
+    }
+
+    .timer-indicator-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #4d667e;
+      font-size: 10.5px;
+      padding: 0 12px;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .history-section {
+      border: 1px solid #b7d4f2;
+      background: #eaf4ff;
+      padding: 10px 11px;
+      display: grid;
+      grid-template-columns: 78px 250px 1fr;
+      gap: 12px;
+      align-items: center;
+      min-height: 88px;
+      margin-bottom: 8px;
+    }
+
+    .history-icon {
+      text-align: center;
+      font-size: 25px;
+      color: var(--rak-blue-2);
+      font-weight: 700;
+    }
+
+    .history-title {
+      color: var(--rak-blue-2);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .history-sub {
+      color: #001b3d;
+      font-size: 12px;
+    }
+
+    .history-box {
+      min-height: 54px;
+      max-height: 72px;
+      background: #fff;
+      border: 1px solid #cfd9e3;
+      padding: 7px 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      white-space: normal;
+      line-height: 1.45;
+      color: #25496d;
+    }
+
+    .note {
+      color: #263d55;
+      font-size: 12px;
+      margin: 2px 0 0 4px;
+    }
+
+    .debug-panel {
+      display: none;
+      margin-top: 14px;
+      padding: 22px 12px;
+      min-height: 260px;
+      max-height: 560px;
+      overflow: auto;
+      background: #fbfdff;
+      border: 1px dashed #9ebbd6;
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #003b64;
+    }
+
+    .timer-active .metric-value.green {
+      color: var(--rak-danger);
+    }
+
+    @media (max-width: 760px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .action-area { width: 100%; justify-content: flex-start; }
+      .grid-current,
+      .grid-overall,
+  
+
+    .timer-indicator-card {
+      position: relative;
+    }
+
+    .timer-indicator-title {
+      color: #001b3d;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .timer-indicator-value {
+      color: var(--rak-blue-2);
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.05;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .timer-indicator-card.active .timer-indicator-value {
+      color: var(--rak-blue-2);
+    }
+
+    .timer-indicator-card.warning .timer-indicator-value {
+      color: #e69500;
+    }
+
+    .timer-indicator-status {
+      color: #25496d;
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 14px;
+    }
+
+    .timer-progress-wrap {
+      height: 14px;
+      width: calc(100% - 28px);
+      background: #eeeeee;
+      border: 1px solid #d9e3ee;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 7px 14px 8px 14px;
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #0a8f43;
+      border-radius: 999px;
+      transition: width 0.5s linear, background 0.3s ease;
+    }
+
+    .timer-indicator-card.active .timer-progress-fill {
+      background: #0a8f43;
+    }
+
+    .timer-indicator-card.danger .timer-progress-fill {
+      background: #c00000;
+    }
+
+    .timer-indicator-card.danger .timer-indicator-value {
+      color: #c00000;
+    }
+
+    .timer-indicator-card.warning .timer-progress-fill {
+      background: #e69500;
+    }
+
+    .timer-indicator-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #4d667e;
+      font-size: 10.5px;
+      padding: 0 12px;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .history-section { grid-template-columns: 1fr; }
+      .side-card { min-height: 120px; }
+      .history-box { white-space: normal; height: auto; min-height: 34px; }
+    }

@@ -1,0 +1,47 @@
+{
+  "projectShortName": "RAKBANK GCB",
+  "projectFullName": "RAKBANK Genesys Context Bridge",
+  "version": "v1.0.0-prod",
+  "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
+  "oauthRedirectPage": "index.html",
+  "pages": {
+    "router": "index.html",
+    "chatMonitor": "chatmonitor.html",
+    "holdResume": "holdresume.html",
+    "holdTimer": "holdtimer.html",
+    "prospects": "prospects.html"
+  },
+  "recommendedUrls": {
+    "clientApp": "index.html?page=chatmonitor&clientId=<OAuthClientId>&region=mypurecloud.ie&source=ClientApp",
+    "interactionWidgetHoldResume": "holdresume.html?v=<AFT_GCB_Version>&<CommonParams>",
+    "interactionWidgetHoldTimer": "holdtimer.html?v=<AFT_GCB_Version>&<CommonParams>",
+    "interactionWidgetProspects": "prospects.html?v=<AFT_GCB_Version>&<CommonParams>"
+  },
+  "removed": [
+    "sendmsg.html",
+    "js/send-message.js",
+    "css/send-message.css"
+  ],
+  "notes": [
+    "Initial PROD v1.0.0 release candidate.",
+    "No Joined/Greeting, MonitorWake, duplicate-control, OAuth/MFA, notification, Hold/Resume, or Prospects logic changed."
+  ],
+  "fileMetadata": {
+    "author": "Sivakumar Chandrahasu",
+    "created": "2026-07-07",
+    "updated": "2026-07-12",
+    "purpose": [
+      "GCB package manifest for page inventory, version, and routing reference.",
+      "Keeps package metadata aligned with the deployed static file set."
+    ]
+  },
+  "environment": "PRODUCTION",
+  "releaseTrack": "PROD",
+  "sourceDevBaseline": "v1.7.2.71-faster-page-load-fallback",
+  "releaseNotes": [
+    "Initial production package.",
+    "Created from confirmed DEV baseline v1.7.2.71-faster-page-load-fallback.",
+    "Production-only README included.",
+    "No business logic changes from the confirmed DEV baseline."
+  ]
+}

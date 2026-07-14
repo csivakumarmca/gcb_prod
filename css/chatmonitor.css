@@ -1,0 +1,156 @@
+/*
+ * Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
+ * Purpose: Styles the ChatMonitor dashboard, admin cards, views, and notification logs.
+ *          Keeps support/admin troubleshooting screens readable in the Genesys Client App.
+ */
+:root{
+    --brand1:#0b4ea2; --brand2:#19a6d9; --brand3:#0f7cc1; --bg:#eef4fb; --card:#ffffff; --ink:#16253a; --muted:#64748b; --line:#dbe5f1;
+    --green:#15803d; --orange:#b45309; --red:#b91c1c; --blue:#1d4ed8; --purple:#6d28d9; --slate:#334155;
+    --soft-green:#dcfce7; --soft-orange:#fff7ed; --soft-red:#fee2e2; --soft-blue:#e7f3ff; --soft-purple:#ede9fe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f6f9fd 0%,#eef4fb 100%);color:var(--ink)}
+  .header{position:relative;overflow:hidden;background:linear-gradient(110deg,#073c8f 0%,#075dbc 44%,#13a6d8 100%);color:#fff;padding:10px 18px;border-radius:0 0 18px 18px;box-shadow:0 8px 20px rgba(7,60,143,.20);display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;border-bottom:1px solid rgba(255,255,255,.18)}
+  .header::before{content:'';position:absolute;right:-8%;top:-62%;width:70%;height:170%;background:radial-gradient(circle at 78% 45%,rgba(255,255,255,.20),rgba(255,255,255,0) 54%);pointer-events:none}
+  .header::after{content:'';position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(165deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.15) 46%,rgba(255,255,255,0) 72%);transform:skewY(-2deg);transform-origin:100% 100%;pointer-events:none}
+  .brand{position:relative;z-index:1;display:flex;align-items:center;gap:12px;min-width:0}.logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);display:grid;place-items:center;box-shadow:0 8px 16px rgba(5,26,56,.22), inset 0 0 0 1px rgba(255,255,255,.9);padding:6px;overflow:hidden;flex:0 0 auto}.logo img{width:38px;height:38px;object-fit:contain}.title{min-width:0}.title h1{margin:0;font-size:19px;line-height:1.05;letter-spacing:.08px;color:#fff;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.title p{margin:4px 0 0;font-size:11px;color:rgba(255,255,255,.94);letter-spacing:.12px;font-weight:600}.version{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;min-width:118px;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);backdrop-filter:blur(2px);font-size:8px;text-align:center;line-height:1;color:rgba(255,255,255,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}.version b{display:block;font-size:12px;color:#fff;font-weight:800;white-space:nowrap}
+  .wrap{padding:14px 14px 10px;display:grid;grid-template-columns:330px 1fr;gap:10px;min-height:calc(100vh - 92px)}
+  .card{background:rgba(255,255,255,.96);border:1px solid rgba(203,213,225,.72);border-radius:18px;box-shadow:0 8px 20px rgba(15,23,42,.05);padding:12px}
+  h2{font-size:14px;margin:0 0 8px;color:#0f172a}h3{font-size:12px;margin:12px 0 7px;color:#334155}.small{font-size:11px;color:var(--muted);line-height:1.3}.note{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:9px;border-radius:12px;font-size:12px;line-height:1.35;margin-top:10px}
+  label{display:block;font-size:12px;font-weight:700;margin-top:10px;margin-bottom:4px;color:#374151}
+  input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:9px 10px;font-size:13px;background:#fff;color:#111827}textarea{min-height:60px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  button{border:0;border-radius:10px;padding:8px 10px;font-weight:800;font-size:11.5px;cursor:pointer;background:var(--slate);color:#fff;margin:4px 4px 0 0;white-space:nowrap}
+  button.primary{background:linear-gradient(90deg,var(--brand1),var(--brand2))}button.blue{background:var(--blue)}button.green{background:var(--green)}button.orange{background:var(--orange)}button.red{background:var(--red)}button.gray{background:#64748b}button.purple{background:var(--purple)}button:disabled{opacity:.55;cursor:not-allowed}
+  .tabs{display:flex;gap:7px;margin-bottom:10px}.tab{background:#e8edf4;color:#334155;margin:0;border-radius:11px;padding:7px 11px;font-size:11px;box-shadow:inset 0 0 0 1px #d8e1ec}.tab.active{background:linear-gradient(90deg,var(--brand1),var(--brand2));color:#fff;box-shadow:0 6px 12px rgba(11,78,162,.15)}.tabPanel{display:none}.tabPanel.active{display:block}
+  .statusGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}.pill{padding:8px 9px;border-radius:13px;background:#f8fbff;border:1px solid #dbe8f5;font-size:11.5px;min-height:46px;box-shadow:0 1px 0 rgba(255,255,255,.85) inset}.pill b{display:block;font-size:10.5px;color:#64748b;margin-bottom:3px}.pill span{word-break:break-word}.pill.ok{background:var(--soft-green);border-color:#86efac}.pill.warn{background:var(--soft-orange);border-color:#fdba74}.pill.err{background:var(--soft-red);border-color:#fca5a5}.pill.blue{background:var(--soft-blue);border-color:#93c5fd}
+  .metric{background:#fff;border:1px solid #dfe7f1;border-radius:18px;padding:10px;box-shadow:0 4px 12px rgba(15,23,42,.04)}.metric b{font-size:10.5px;color:#64748b;text-transform:uppercase}.metric div{font-size:21px;font-weight:900;margin-top:4px}.metric.green div{color:var(--green)}.metric.orange div{color:var(--orange)}.metric.red div{color:var(--red)}.metric.blue div{color:var(--blue)}
+  table{width:100%;border-collapse:collapse;font-size:11px}th,td{border-bottom:1px solid #e7edf5;text-align:left;padding:7px;vertical-align:top}th{background:#f4f8fc;color:#475569;position:sticky;top:0;z-index:1}.tableWrap{max-height:360px;overflow:auto;border:1px solid #dfe7f1;border-radius:14px;background:#fff}.adminTableWrap{max-height:520px;overflow:auto;border:1px solid #dfe7f1;border-radius:14px;background:#fff}
+  .badge{display:inline-block;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:800}.assigned{background:var(--soft-orange);color:#9a3412}.joined{background:var(--soft-green);color:#166534}.ended{background:var(--soft-red);color:#991b1b}.unknown{background:var(--soft-blue);color:#075985}.sent{background:#dcfce7;color:#166534}.pending{background:#fef3c7;color:#92400e}.skip{background:#e2e8f0;color:#475569}.fail{background:#fee2e2;color:#991b1b}
+  .log{height:390px;overflow:auto;background:#0b1020;color:#d1e7ff;border-radius:14px;padding:10px;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap}.line{border-bottom:1px solid #ffffff14;padding:5px 0}.okText{color:#8ff0a4}.warnText{color:#ffd166}.errText{color:#ff8fa3}.infoText{color:#93c5fd}
+  .chatPreview{height:390px;overflow:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.bubble{max-width:80%;padding:9px 11px;border-radius:14px;margin:7px 0;font-size:12.5px;line-height:1.35}.bubble .who{font-weight:800;font-size:11px;margin-bottom:3px}.bubble.agent{background:#e0f2fe;margin-left:auto;border-bottom-right-radius:4px}.bubble.system{background:#fef3c7;margin-right:auto;border-bottom-left-radius:4px}.bubble.customer{background:#fff;border:1px solid #e2e8f0;margin-right:auto;border-bottom-left-radius:4px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mainGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.checkLine{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#334155;margin-top:8px}.checkLine input{width:auto;margin-top:2px}.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.dangerText{color:#b91c1c;font-weight:700}.goodText{color:#15803d;font-weight:700}
+  @media(max-width:1100px){.wrap{grid-template-columns:1fr}.row4{grid-template-columns:1fr 1fr}.mainGrid,.split{grid-template-columns:1fr}.log,.chatPreview{height:300px}}
+
+
+.adminStatusGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 8px}
+.adminStatusGrid .pill{min-height:42px;padding:7px 8px}
+.logFilters button{background:#475569;color:#fff;padding:7px 9px;font-size:11.5px;border-radius:9px}
+.logFilters button.active{background:linear-gradient(90deg,var(--brand1),var(--brand2));box-shadow:0 0 0 2px #bae6fd inset}
+@media(max-width:1100px){.adminStatusGrid{grid-template-columns:1fr 1fr}}
+
+@media(max-width:900px){.header{padding:9px 12px;min-height:68px;gap:8px}.brand{gap:10px}.logo{width:48px;height:48px;border-radius:14px;padding:5px}.logo img{width:33px;height:33px}.title h1{font-size:17px}.title p{font-size:10px;margin-top:3px}.version{min-width:104px;padding:6px 11px}.version b{font-size:11px}.wrap{padding:12px 10px}}
+
+/* v1.7.2.30 participant-config status + compact banner refinement for narrow Client App layout. */
+.header .version span{display:none!important}
+.header .version{min-width:auto;padding:5px 12px;border-radius:999px;align-items:center;text-align:center}
+.header .version b{font-size:11.5px;line-height:1;color:#fff}
+
+.compactConfigCard{margin-top:10px;padding:10px}
+.configStatusWrap{margin-top:8px;max-height:230px;overflow:auto;border:1px solid #dfe7f1;border-radius:13px;background:#fff}
+.configStatusWrap table{font-size:10.5px}
+.configStatusWrap th,.configStatusWrap td{padding:6px 7px}
+.configStatusWrap th{top:0;background:#f4f8fc}
+.missingText{color:#b91c1c;font-weight:700}
+@media(max-width:900px){.configStatusWrap{max-height:190px}.configStatusWrap table{font-size:10px}}
+
+
+/* v1.7.2.31 banner layout toggle for management preview.
+   Default = light. Supported values: light | dark.
+   Applied from query parameter bannerLayout/bannerTheme or participant attribute AFT_GCB_BannerLayout / AFT_GCB_BannerTheme. */
+body.banner-dark .header{background:linear-gradient(110deg,#073c8f 0%,#075dbc 44%,#13a6d8 100%);box-shadow:0 8px 20px rgba(7,60,143,.20);border-bottom:1px solid rgba(255,255,255,.18)}
+body.banner-dark .header::before{background:radial-gradient(circle at 78% 45%,rgba(255,255,255,.20),rgba(255,255,255,0) 54%)}
+body.banner-dark .header::after{background:linear-gradient(165deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.15) 46%,rgba(255,255,255,0) 72%)}
+body.banner-dark .header .title h1,
+body.banner-dark .header .title p,
+body.banner-dark .header .version,
+body.banner-dark .header .version b{color:#fff}
+body.banner-dark .header .version{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+
+body.banner-light .header{background:linear-gradient(90deg,#2d63b2 0%,#2d7cca 42%,#31afe2 72%,#43cae8 100%);box-shadow:0 8px 20px rgba(45,99,178,.16);border-bottom:1px solid rgba(255,255,255,.52)}
+body.banner-light .header::before{right:-6%;top:-48%;width:60%;height:150%;background:radial-gradient(circle at 82% 35%,rgba(255,255,255,.22),rgba(255,255,255,0) 56%)}
+body.banner-light .header::after{height:24px;background:linear-gradient(165deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 44%,rgba(255,255,255,0) 74%)}
+body.banner-light .header .logo{box-shadow:0 8px 16px rgba(31,75,137,.14), inset 0 0 0 1px rgba(255,255,255,.94)}
+body.banner-light .header .title h1,
+body.banner-light .header .title p,
+body.banner-light .header .version,
+body.banner-light .header .version b{color:#fff}
+body.banner-light .header .version{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.34);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+
+
+/* v1.7.2.33 final compact banner sizing and default light banner.
+   Requested: logo 40px x 40px, padding 0, banner min-height 50px. */
+body.banner-light .header,
+body:not(.banner-dark) .header{
+  background:linear-gradient(105deg,#f8fbff 0%,#eef7ff 58%,#e8f9fb 100%) !important;
+  color:#0f172a !important;
+  min-height:50px !important;
+  padding:6px 12px !important;
+  border-radius:0 0 12px 12px !important;
+  border:1px solid #dbeafe !important;
+  border-left:4px solid #20a7d8 !important;
+  box-shadow:0 4px 12px rgba(15,111,159,.07) !important;
+}
+body.banner-light .header::before,
+body:not(.banner-dark) .header::before{
+  background:radial-gradient(circle at 78% 45%,rgba(32,167,216,.12),rgba(32,167,216,0) 56%) !important;
+}
+body.banner-light .header::after,
+body:not(.banner-dark) .header::after{
+  display:none !important;
+}
+.header .logo,
+body.banner-light .header .logo,
+body.banner-dark .header .logo{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+  border-radius:14px !important;
+  padding:0 !important;
+  background:#ffffff !important;
+  box-shadow:0 3px 8px rgba(0,0,0,.10) !important;
+}
+.header .logo img,
+body.banner-light .header .logo img,
+body.banner-dark .header .logo img{
+  width:36px !important;
+  height:36px !important;
+}
+body.banner-light .header .title h1,
+body:not(.banner-dark) .header .title h1{
+  color:#0f172a !important;
+  font-size:15px !important;
+}
+body.banner-light .header .title p,
+body:not(.banner-dark) .header .title p{
+  color:#2563eb !important;
+  font-size:9.5px !important;
+  margin-top:2px !important;
+}
+body.banner-light .header .version,
+body:not(.banner-dark) .header .version{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  color:#0f6f9f !important;
+  padding:0 !important;
+}
+body.banner-light .header .version b,
+body:not(.banner-dark) .header .version b{
+  color:#0f6f9f !important;
+  font-size:11px !important;
+}
+@media(max-width:900px){
+  .header{min-height:50px !important;padding:6px 10px !important;gap:8px !important;}
+  .brand{gap:8px !important;}
+  .logo{width:40px !important;height:40px !important;padding:0 !important;border-radius:14px !important;}
+  .logo img{width:36px !important;height:36px !important;}
+  .title h1{font-size:14px !important;}
+  .title p{font-size:9px !important;margin-top:2px !important;}
+  .version b{font-size:10.5px !important;}
+}
+
+.agentDiagnosticBox{margin-top:12px;padding:12px;border:1px solid #cfdceb;border-radius:12px;background:#f8fbff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.agentDiagnosticBox .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.agentDiagnosticBox .diagnosticStatus{width:100%;margin-top:2px}
