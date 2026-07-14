@@ -537,3 +537,18 @@ DEV Agent Script expression:
 ```
 
 The PROD package remains unchanged.
+
+
+## v1.7.2.73-customer-details-layout-fix
+
+- Customer Details is now a separate top-level section.
+- Service Classification starts below Customer Details.
+- Customer labels: Arial 12px bold.
+- Customer values: Arial 11px.
+- Customer field height: 29px.
+- Approved two-column spacing, borders, header height, and padding restored.
+- No participant-data, Card/Account, wrap-up, or submit logic changed.
+
+Versions: GCB `v1.7.2.73-customer-details-layout-fix`, ChatMonitor `v1.2.32`, Prospects `Prospects_v3.17`, cache `172273`.
+
+Important: HTML cannot render outside its Genesys Web Page component. The Prospects web component must cover the combined Customer Details + Service Classification area. Remove or hide the old Agent Script Customer Details fields and the old Service Classification header to avoid duplication.
