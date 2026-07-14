@@ -104,7 +104,7 @@
     (function () {
       "use strict";
 
-      const ROUTER_VERSION = "v1.7.2.93-resume-limit-warning";
+      const ROUTER_VERSION = "v1.7.2.94-production-review-hardening";
       const C = window.RakCommon;
       const Auth = window.RakAuth;
       const Api = window.GenesysApi;
@@ -336,7 +336,24 @@
               records[key] = record;
               writeCentralHoldRecords(records);
               broadcastCentralHoldEvent("RESUMED_AUTO", record);
-              if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "success", "Auto resume sent by central monitor.");
+              if (window.GcbDebug) {
+                const currentCount = Number(record.currentHoldCount || 0);
+                const maximumCount = Number(record.maxHoldAttempts || 0);
+                const limitReached = maximumCount > 0 && currentCount >= maximumCount;
+                const countText = currentCount > 0 && maximumCount > 0
+                  ? " (" + currentCount + " / " + maximumCount + ")"
+                  : "";
+
+                if (limitReached) {
+                  window.GcbDebug.setStatus(
+                    "holdResume",
+                    "warning",
+                    "Chat resumed successfully. You have already reached the maximum allowed hold attempts." + countText
+                  );
+                } else {
+                  window.GcbDebug.setStatus("holdResume", "success", "Auto resume sent by central monitor.");
+                }
+              }
               renderStatusLines();
               debugLog("INFO", "CENTRAL_AUTO_RESUME_OK", "key=" + key + " | conversationId=" + C.safeString(record.conversationId));
               changed = true;

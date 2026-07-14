@@ -1087,7 +1087,7 @@
     }
 
     function showMaxAttemptsAlert() {
-      showPersistentAlert(getMaxAttemptsAlertMessage(), "error");
+      showPersistentAlert(getMaxAttemptsAlertMessage(), "warning");
     }
 
     function refreshPersistentAlert() {
@@ -1346,6 +1346,8 @@
         resumeMessageText: CONFIG.resumeMessageText,
         maxHoldTime: CONFIG.maxHoldTime,
         autoResumeEnabled: CONFIG.autoResumeEnabled,
+        currentHoldCount: getEffectiveHoldCount(),
+        maxHoldAttempts: CONFIG.maxHoldAttempts,
         holdStartTimeMs: nowMs,
         holdStartTimeUtc: new Date(nowMs).toISOString(),
         status: "HOLD",
@@ -2627,8 +2629,8 @@
         // show the maximum-attempts alert as the final state instead of the duration warning.
         if (getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
           const maxMessage = getMaxAttemptsAlertMessage();
-          startAttentionAlert(maxMessage, "error", "⛔ Max Hold Reached");
-          setStatus("Maximum hold attempts reached. Further Hold is not allowed.", "error");
+          startAttentionAlert(maxMessage, "warning", "⛔ Max Hold Reached");
+          setStatus("Maximum hold attempts reached. Further Hold is not allowed.", "warning");
         } else {
           const durationMessage = CONFIG.holdMaxTimeAlertText + " (" + CONFIG.maxHoldTime + " seconds). " + CONFIG.autoResumeSentText;
           startAttentionAlert(durationMessage, "warning", "⚠️ Auto Resume Sent");

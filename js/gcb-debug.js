@@ -3,7 +3,7 @@
  * Purpose: Shared debug/status bridge for GCB modules.
  *          Writes module status and diagnostic messages for support troubleshooting.
  */
-/* GCB Central Debug Bridge v1.1.1 */
+/* GCB Central Debug Bridge v1.1.2 */
 (function (global) {
   "use strict";
 
@@ -118,7 +118,8 @@
 
     if (moduleName === "holdresume" || moduleName === "holdresume.html" || /holdresume\.html/i.test(safeString(event.page))) {
       if (step === "SEND_OK") setStatus("holdResume", "success", msg || "Hold/Resume message sent.");
-      if (step === "SUMMARY_API_OK" || step === "SUMMARY_DIRECT_OK") setStatus("holdResume", "success", "Hold summary loaded.");
+      // Summary refresh is diagnostic only. It must not overwrite an active duration warning,
+      // final maximum-attempt warning, or Resume outcome already set by the shared hold event.
       if (level === "ERROR" || step.includes("FAILED") || step.includes("ERROR")) setStatus("holdResume", "failed", msg);
     }
 

@@ -1166,3 +1166,20 @@ Versions:
 - ChatMonitor UI: `v1.2.52`
 - Prospects: `Prospects_v3.39`
 - Cache: `172293`
+
+
+## v1.7.2.94-production-review-hardening
+
+Development validation package containing the production-review hardening corrections.
+
+- AFT GCB: `v1.7.2.94-production-review-hardening`
+- ChatMonitor UI: `v1.2.53`
+- Prospects: `Prospects_v3.40`
+- Cache: `172294`
+
+Validation focus:
+
+1. Summary refresh must not replace an active Hold warning.
+2. Maximum Hold attempts must remain Warning, not Error.
+3. Final manual or automatic Resume must retain the maximum-attempt warning and count.
+4. Existing messaging, transfer, supervisor, language, duplicate-control, timer, and Prospects behavior must remain unchanged.
