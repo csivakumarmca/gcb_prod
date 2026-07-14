@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172285" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172286" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.31";
+      const DEFAULT_APP_VERSION = "Prospects_v3.32";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -184,6 +184,12 @@
           getParam("activeColumnName"),
           ["Active", "active", "IsActive", "isActive", "Status", "status"]
         ),
+      };
+
+      const participantProspectData = {
+        interactionTypeListJson: "",
+        contactReasonListJson: "",
+        interactionOutcomeListJson: "",
       };
 
       const state = {
@@ -438,8 +444,17 @@
         const conversation = await response.json();
         const attrs = mergeParticipantAttributes(conversation);
         applyCustomerDetailsFromParticipantAttributes(attrs);
+
+        participantProspectData.interactionTypeListJson =
+          participantAttrText(attrs, "SI_Prospect_InteractionTypeListJson", "");
+
+        participantProspectData.contactReasonListJson =
+          participantAttrText(attrs, "SI_Prospect_ContactReasonListJson", "");
+
+        participantProspectData.interactionOutcomeListJson =
+          participantAttrText(attrs, "SI_Prospect_InteractionOutcomeListJson", "");
+
         dataTableConfig.types = participantAttrText(attrs, "AFT_GCB_ProspectsTypeDataTableId", dataTableConfig.types);
-        dataTableConfig.prospects = participantAttrText(attrs, "AFT_GCB_ProspectsMappingDataTableId", dataTableConfig.prospects);
         wrapupConfig.createIfMissing = participantAttrBool(attrs, "AFT_GCB_CreateWrapupIfMissing", wrapupConfig.createIfMissing);
         wrapupConfig.disconnectAfterSubmit = participantAttrBool(attrs, "AFT_GCB_DisconnectAfterProspectsSubmit", wrapupConfig.disconnectAfterSubmit);
         wrapupConfig.nameSeparator = participantAttrText(attrs, "AFT_GCB_WrapupNameSeparator", wrapupConfig.nameSeparator);
@@ -549,7 +564,10 @@
           `region: ${GENESYS_REGION || "[missing]"}`,
           `clientId: ${OAUTH_CLIENT_ID || "[missing]"}`,
           `typeDataTableId: ${dataTableConfig.types || "[missing]"}`,
-          `prospectsDataTableId: ${dataTableConfig.prospects || "[missing]"}`,
+          `mappingSource: participant data`,
+          `contactReasonListJson: ${participantProspectData.contactReasonListJson ? "[available]" : "[missing]"}`,
+          `interactionOutcomeListJson: ${participantProspectData.interactionOutcomeListJson ? "[available]" : "[missing]"}`,
+          `interactionTypeListJson: ${participantProspectData.interactionTypeListJson ? "[available]" : "[not supplied - Data Table fallback]"}`,
           `type column aliases: ${dataTableColumnConfig.typeOfInteraction.join(" | ")}`,
           `contact column aliases: ${dataTableColumnConfig.contactReason.join(" | ")}`,
           `outcome column aliases: ${dataTableColumnConfig.interactionOutcome.join(" | ")}`,
@@ -578,6 +596,80 @@
         renderOptions("outcome", []);
       }
 
+      function parseParticipantJsonArray(rawValue, attributeName) {
+        const text = String(rawValue || "").trim();
+        if (!text) return [];
+
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (error) {
+          throw new Error(`${attributeName} contains invalid JSON: ${error.message}`);
+        }
+
+        if (!Array.isArray(parsed)) {
+          throw new Error(`${attributeName} must contain a JSON array`);
+        }
+
+        return parsed.map((item) => cleanOptionValue(item));
+      }
+
+      function buildProspectRowsFromParticipantData() {
+        const contactReasons = parseParticipantJsonArray(
+          participantProspectData.contactReasonListJson,
+          "SI_Prospect_ContactReasonListJson"
+        );
+
+        const outcomes = parseParticipantJsonArray(
+          participantProspectData.interactionOutcomeListJson,
+          "SI_Prospect_InteractionOutcomeListJson"
+        );
+
+        if (!contactReasons.length && !outcomes.length) {
+          throw new Error(
+            "Prospect mapping participant data is missing: " +
+            "SI_Prospect_ContactReasonListJson / SI_Prospect_InteractionOutcomeListJson"
+          );
+        }
+
+        if (contactReasons.length !== outcomes.length) {
+          throw new Error(
+            `Prospect mapping list count mismatch: contactReasonCount=${contactReasons.length}, ` +
+            `interactionOutcomeCount=${outcomes.length}`
+          );
+        }
+
+        const rows = [];
+        for (let index = 0; index < contactReasons.length; index += 1) {
+          const contactReason = cleanOptionValue(contactReasons[index]);
+          const interactionOutcome = cleanOptionValue(outcomes[index]);
+          if (!contactReason || !interactionOutcome) continue;
+
+          rows.push({
+            typeOfInteraction: "",
+            contactReason,
+            interactionOutcome,
+            active: true,
+          });
+        }
+
+        return rows;
+      }
+
+      function loadInteractionTypesFromParticipantData() {
+        const values = parseParticipantJsonArray(
+          participantProspectData.interactionTypeListJson,
+          "SI_Prospect_InteractionTypeListJson"
+        );
+
+        return uniqueSortedOptions(
+          values
+            .map((value) => cleanOptionValue(value))
+            .filter(Boolean)
+            .map((value) => ({ label: value, value }))
+        );
+      }
+
       async function loadLiveData(token) {
         try {
           setRuntimeStatus("Loading Prospects values...");
@@ -599,24 +691,23 @@
             state.outcomes = normalizeOptions(outcomeResult);
             state.prospectRows = [];
           } else {
-            const [typeRows, prospectRows] = await Promise.all([
-              fetchDataTableRows(token, dataTableConfig.types),
-              fetchDataTableRows(token, dataTableConfig.prospects),
-            ]);
-
-            state.debugInfo.typeRows = typeRows.length;
-            state.debugInfo.mappingRows = prospectRows.length;
-            state.debugInfo.typeColumns = getSampleColumns(typeRows[0]);
-            state.debugInfo.mappingColumns = getSampleColumns(prospectRows[0]);
-            state.prospectRows = prospectRows.map(normalizeTableRow).filter((row) => row.active);
-            state.types = normalizeTypeRows(typeRows);
-            if (!state.types.length) {
-              state.types = uniqueSortedOptions(state.prospectRows.map((row) => ({
-                label: row.typeOfInteraction,
-                value: row.typeOfInteraction,
-              })));
-            }
+            state.prospectRows = buildProspectRowsFromParticipantData();
+            state.debugInfo.mappingRows = state.prospectRows.length;
             state.debugInfo.activeMappingRows = state.prospectRows.length;
+            state.debugInfo.mappingColumns =
+              "SI_Prospect_ContactReasonListJson | SI_Prospect_InteractionOutcomeListJson";
+
+            if (participantProspectData.interactionTypeListJson) {
+              state.types = loadInteractionTypesFromParticipantData();
+              state.debugInfo.typeRows = state.types.length;
+              state.debugInfo.typeColumns = "SI_Prospect_InteractionTypeListJson";
+            } else {
+              const typeRows = await fetchDataTableRows(token, dataTableConfig.types);
+              state.debugInfo.typeRows = typeRows.length;
+              state.debugInfo.typeColumns = getSampleColumns(typeRows[0]);
+              state.types = normalizeTypeRows(typeRows);
+            }
+
             rebuildDependentOptionsFromRows();
           }
 

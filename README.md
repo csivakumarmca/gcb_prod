@@ -975,3 +975,37 @@ Versions:
 - ChatMonitor UI: `v1.2.44`
 - Prospects: `Prospects_v3.31`
 - Cache: `172285`
+
+
+## v1.7.2.86-prospects-participant-mapping
+
+Prospects mapping data now comes from Architect participant attributes:
+
+```text
+SI_Prospect_ContactReasonListJson
+SI_Prospect_InteractionOutcomeListJson
+```
+
+Both attributes must contain valid JSON arrays with the same number of items and matching order.
+
+Example:
+
+```text
+ContactReason[0]       -> InteractionOutcome[0]
+ContactReason[1]       -> InteractionOutcome[1]
+```
+
+Optional Interaction Type participant attribute:
+
+```text
+SI_Prospect_InteractionTypeListJson
+```
+
+When this optional attribute is not supplied, the page temporarily continues using the existing Interaction Type Data Table fallback.
+
+Versions:
+
+- AFT GCB: `v1.7.2.86-prospects-participant-mapping`
+- ChatMonitor UI: `v1.2.45`
+- Prospects: `Prospects_v3.32`
+- Cache: `172286`
