@@ -569,3 +569,35 @@ Versions:
 - ChatMonitor UI: `v1.2.33`
 - Prospects: `Prospects_v3.20`
 - Cache: `172274`
+
+
+## v1.7.2.75-account-list-source-fix
+
+Card No / Account dropdown correction:
+
+- Dropdown source: `SI_Account_AccountIdList` only
+- Removed dropdown parsing from:
+  - `SI_Product_CardAccountNoList`
+  - `CardAccountList`
+- Selected value remains stored in:
+  - `pia_ddl_Selected_AccountNumber`
+
+Expected example:
+
+```text
+SI_Account_AccountIdList = 0342540096001
+```
+
+Dropdown result:
+
+```text
+Select Card/Account
+0342540096001
+```
+
+Versions:
+
+- GCB: `v1.7.2.75-account-list-source-fix`
+- ChatMonitor UI: `v1.2.34`
+- Prospects: `Prospects_v3.21`
+- Cache: `172275`

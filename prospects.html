@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172274" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172275" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.20";
+      const DEFAULT_APP_VERSION = "Prospects_v3.21";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -123,11 +123,8 @@
         type: getFirstParam(["customerType", "SI_Customer_Type", "siCustomerType"]),
         mobileNumber: getFirstParam(["mobileNumber", "customerMobileNumber", "SI_Customer_MobileNumber", "siCustomerMobileNumber"]),
         cardAccountListRaw: getFirstParam([
-          "cardAccountList",
           "accountIdList",
-          "SI_Product_CardAccountNoList",
           "SI_Account_AccountIdList",
-          "siProductCardAccountNoList",
           "siAccountAccountIdList"
         ]),
       };
@@ -356,9 +353,7 @@
               participantAttrText(attrs, "mobileNumber", "")));
 
         customerDetails.cardAccountListRaw = customerDetails.cardAccountListRaw ||
-          participantAttrText(attrs, "SI_Product_CardAccountNoList",
-            participantAttrText(attrs, "SI_Account_AccountIdList",
-              participantAttrText(attrs, "CardAccountList", "")));
+          participantAttrText(attrs, "SI_Account_AccountIdList", "");
 
         renderCustomerDetails();
       }
