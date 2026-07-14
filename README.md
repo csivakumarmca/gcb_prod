@@ -601,3 +601,33 @@ Versions:
 - ChatMonitor UI: `v1.2.34`
 - Prospects: `Prospects_v3.21`
 - Cache: `172275`
+
+
+## v1.7.2.76-prospect-account-card-parameter
+
+Prospects Card No / Account participant-data mapping:
+
+```text
+Dropdown source:
+SI_Prospect_AccountOrCard_NumberList
+
+Selected value:
+SI_Prospect_Selected_AccountOrCard_Number
+
+Legacy compatibility selected value:
+pia_ddl_Selected_AccountNumber
+```
+
+Example Architect participant data:
+
+```text
+SI_Prospect_AccountOrCard_NumberList =
+0342540096001|1234********5678|9876********4321
+```
+
+Versions:
+
+- GCB: `v1.7.2.76-prospect-account-card-parameter`
+- ChatMonitor UI: `v1.2.35`
+- Prospects: `Prospects_v3.22`
+- Cache: `172276`

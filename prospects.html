@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prospects v3.2 Direct Auth Fallback</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=172275" />
+    <link rel="stylesheet" href="./css/prospects.css?v=172276" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v3.21";
+      const DEFAULT_APP_VERSION = "Prospects_v3.22";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -123,9 +123,9 @@
         type: getFirstParam(["customerType", "SI_Customer_Type", "siCustomerType"]),
         mobileNumber: getFirstParam(["mobileNumber", "customerMobileNumber", "SI_Customer_MobileNumber", "siCustomerMobileNumber"]),
         cardAccountListRaw: getFirstParam([
-          "accountIdList",
-          "SI_Account_AccountIdList",
-          "siAccountAccountIdList"
+          "prospectAccountOrCardNumberList",
+          "SI_Prospect_AccountOrCard_NumberList",
+          "siProspectAccountOrCardNumberList"
         ]),
       };
 
@@ -353,7 +353,7 @@
               participantAttrText(attrs, "mobileNumber", "")));
 
         customerDetails.cardAccountListRaw = customerDetails.cardAccountListRaw ||
-          participantAttrText(attrs, "SI_Account_AccountIdList", "");
+          participantAttrText(attrs, "SI_Prospect_AccountOrCard_NumberList", "");
 
         renderCustomerDetails();
       }
@@ -1286,6 +1286,7 @@
           await setParticipantAttributes(token, {
             // Customer Details selection moved from Agent Script into Prospects HTML.
             // The selected value is stored only when the agent clicks Submit.
+            SI_Prospect_Selected_AccountOrCard_Number: selectedCardAccount.value,
             pia_ddl_Selected_AccountNumber: selectedCardAccount.value,
             Agent_Selected_CardAccount: selectedCardAccount.value,
             Agent_Selected_CardAccount_Display: selectedCardAccount.label,
