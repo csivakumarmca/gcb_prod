@@ -4,7 +4,7 @@
  *          Uses communication-leg send keys, runtime memory, localStorage, and participant data duplicate checks.
  *          Maintains support/admin dashboard status and exportable logs.
  */
-const APP_VERSION = 'v1.2.47';
+const APP_VERSION = 'v1.2.48';
 let currentUser = null;
 let channel = null;
 let notifySocket = null;

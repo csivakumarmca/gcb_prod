@@ -1057,3 +1057,25 @@ Versions:
 - ChatMonitor UI: `v1.2.47`
 - Prospects: `Prospects_v3.34`
 - Cache: `172288`
+
+
+## v1.7.2.89-status-recovery-fix
+
+Central status recovery updates:
+
+```text
+Maximum hold duration reached
+→ Warning
+
+Manual or automatic Resume completed
+→ Hold / Resume Success
+```
+
+Resolved historical module errors are no longer shown as the current `Last Error` after a later successful recovery for the same page/functionality.
+
+Versions:
+
+- AFT GCB: `v1.7.2.89-status-recovery-fix`
+- ChatMonitor UI: `v1.2.48`
+- Prospects: `Prospects_v3.35`
+- Cache: `172289`

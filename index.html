@@ -104,7 +104,7 @@
     (function () {
       "use strict";
 
-      const ROUTER_VERSION = "v1.7.2.88-force-prospects-participant-data";
+      const ROUTER_VERSION = "v1.7.2.89-status-recovery-fix";
       const C = window.RakCommon;
       const Auth = window.RakAuth;
       const Api = window.GenesysApi;
@@ -289,7 +289,7 @@
               writeCentralHoldRecords(records);
               broadcastCentralHoldEvent("HOLD_EXCEEDED", record);
               notifyHoldExceededOnce(record);
-              if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "failed", "Maximum hold duration reached. Manual Resume required.");
+              if (window.GcbDebug) window.GcbDebug.setStatus("holdResume", "warning", "Maximum hold duration reached. Manual Resume required.");
               debugLog("INFO", "CENTRAL_HOLD_EXCEEDED", "key=" + key + " | conversationId=" + C.safeString(record.conversationId));
               changed = true;
               continue;
@@ -352,7 +352,26 @@
         try {
           if (typeof BroadcastChannel !== "undefined") {
             const channel = new BroadcastChannel(GCB_HOLD_CHANNEL);
-            channel.onmessage = function () { processCentralHoldMonitor("BROADCAST"); };
+            channel.onmessage = function (event) {
+              const message = event && event.data ? event.data : {};
+              const type = C.safeString(message.type).toUpperCase();
+
+              if (type === "RESUMED_MANUAL") {
+                if (window.GcbDebug) {
+                  window.GcbDebug.setStatus("holdResume", "success", "Chat resumed manually.");
+                  window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Manual Resume completed.");
+                }
+                renderStatusLines();
+              } else if (type === "RESUMED_AUTO") {
+                if (window.GcbDebug) {
+                  window.GcbDebug.setStatus("holdResume", "success", "Chat resumed automatically.");
+                  window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Automatic Resume completed.");
+                }
+                renderStatusLines();
+              }
+
+              processCentralHoldMonitor("BROADCAST");
+            };
           }
         } catch (_) {}
       }
@@ -371,12 +390,17 @@
         const s = C.safeString(state).toLowerCase();
         if (s === "success") return "status-ok";
         if (s === "failed") return "status-fail";
+        if (s === "warning") return "status-pending";
         return "status-pending";
       }
 
       function statusText(status, defaultText) {
         if (!status || !status.state) return defaultText || "Not run";
-        const state = status.state === "success" ? "Success" : status.state === "failed" ? "Failed" : "Pending";
+        const state =
+          status.state === "success" ? "Success" :
+          status.state === "failed" ? "Failed" :
+          status.state === "warning" ? "Warning" :
+          "Pending";
         return state + (status.reason ? " - " + status.reason : "");
       }
 
@@ -438,12 +462,34 @@
         const events = window.GcbDebug ? window.GcbDebug.getEvents() : [];
         let lastApi = null;
         let lastError = null;
+        const recoveredModules = new Set();
+
         for (let i = events.length - 1; i >= 0; i -= 1) {
           const event = events[i] || {};
-          if (!lastApi && ["FETCH_DONE", "FETCH_FAILED"].includes(C.safeString(event.step).toUpperCase())) lastApi = event;
-          if (!lastError && (C.safeString(event.level).toUpperCase() === "ERROR" || /FAILED|ERROR/.test(C.safeString(event.step).toUpperCase()))) lastError = event;
+          const moduleName = C.safeString(event.module || event.page).toLowerCase();
+          const level = C.safeString(event.level).toUpperCase();
+          const step = C.safeString(event.step).toUpperCase();
+          const message = C.safeString(event.message);
+
+          if (!lastApi && ["FETCH_DONE", "FETCH_FAILED"].includes(step)) lastApi = event;
+
+          const isRecovery =
+            level !== "ERROR" &&
+            (
+              /^STATUS_/.test(step) && /loaded|success|completed|resumed|sent/i.test(message) ||
+              /VALUES_LOADED|SEND_OK|RESUMED_|AUTO_RESUME_OK/.test(step)
+            );
+
+          if (isRecovery && moduleName) recoveredModules.add(moduleName);
+
+          const isError = level === "ERROR" || /FAILED|ERROR/.test(step);
+          if (!lastError && isError && !recoveredModules.has(moduleName)) {
+            lastError = event;
+          }
+
           if (lastApi && lastError) break;
         }
+
         return { lastApi, lastError };
       }
 

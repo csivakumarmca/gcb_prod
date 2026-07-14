@@ -3,7 +3,7 @@
  * Purpose: Shared debug/status bridge for GCB modules.
  *          Writes module status and diagnostic messages for support troubleshooting.
  */
-/* GCB Central Debug Bridge v1.1.0 */
+/* GCB Central Debug Bridge v1.1.1 */
 (function (global) {
   "use strict";
 
@@ -81,6 +81,16 @@
     try { global.dispatchEvent(new CustomEvent("gcb-status-event", { detail: { key: k, status: statuses[k] } })); } catch (_) {}
     return statuses[k];
   }
+  function clearStatus(key) {
+    const k = safeString(key);
+    if (!k) return;
+    const statuses = readStatuses();
+    if (Object.prototype.hasOwnProperty.call(statuses, k)) {
+      delete statuses[k];
+      writeStatuses(statuses);
+      try { global.dispatchEvent(new CustomEvent("gcb-status-event", { detail: { key: k, status: null } })); } catch (_) {}
+    }
+  }
   function clearStatuses() { writeStatuses({}); }
 
   function inferStatus(event) {
@@ -148,7 +158,7 @@
   }
 
   if (!global.GcbDebug) {
-    global.GcbDebug = { log, getEvents: readEvents, clear, exportText, maskUrl, storageKey: STORAGE_KEY, setStatus, getStatuses: readStatuses, clearStatuses };
+    global.GcbDebug = { log, getEvents: readEvents, clear, exportText, maskUrl, storageKey: STORAGE_KEY, setStatus, clearStatus, getStatuses: readStatuses, clearStatuses };
   }
 
   if (!global.__GCB_DEBUG_CONSOLE_WRAPPED__) {
