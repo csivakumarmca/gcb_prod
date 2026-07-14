@@ -104,7 +104,7 @@
     (function () {
       "use strict";
 
-      const ROUTER_VERSION = "v1.7.2.90-index-hold-warning-refresh";
+      const ROUTER_VERSION = "v1.7.2.92-max-hold-attempts-index-warning";
       const C = window.RakCommon;
       const Auth = window.RakAuth;
       const Api = window.GenesysApi;
@@ -229,10 +229,22 @@
       }
 
 
+      function getHoldAlertNotificationMarker(record) {
+        return "GCB_HOLD_ALERT_SENT_" +
+          C.safeString(record && record.key || "").replace(/[^a-zA-Z0-9_.:-]+/g, "_");
+      }
+
+      function clearHoldAlertNotificationMarker(record) {
+        try {
+          const key = getHoldAlertNotificationMarker(record);
+          if (key) localStorage.removeItem(key);
+        } catch (_) {}
+      }
+
       function notifyHoldExceededOnce(record) {
         try {
           if (!("Notification" in window) || Notification.permission !== "granted") return;
-          const key = "GCB_HOLD_ALERT_SENT_" + C.safeString(record && record.key || "").replace(/[^a-zA-Z0-9_.:-]+/g, "_");
+          const key = getHoldAlertNotificationMarker(record);
           if (localStorage.getItem(key)) return;
           localStorage.setItem(key, new Date().toISOString());
           const n = new Notification("SIVAKUMAR - RAKBANK", {
@@ -365,16 +377,59 @@
               const message = event && event.data ? event.data : {};
               const type = C.safeString(message.type).toUpperCase();
 
-              if (type === "RESUMED_MANUAL") {
+              if (type === "MAX_ATTEMPTS_BLOCKED") {
+                const record = message.record || {};
+                const currentCount = C.safeString(record.currentHoldCount);
+                const maximumCount = C.safeString(record.maxHoldAttempts);
+                const countText = currentCount && maximumCount
+                  ? " (" + currentCount + " / " + maximumCount + ")"
+                  : "";
+
+                if (window.GcbDebug) {
+                  window.GcbDebug.setStatus(
+                    "holdResume",
+                    "warning",
+                    "You have already reached the maximum allowed hold attempts." + countText
+                  );
+                  window.GcbDebug.log(
+                    "INFO",
+                    "HOLD_MAX_ATTEMPTS_WARNING",
+                    "Maximum allowed hold attempts reached." + countText
+                  );
+                }
+                renderStatusLines();
+              } else if (type === "HOLD_EXCEEDED") {
+                if (window.GcbDebug) {
+                  window.GcbDebug.setStatus(
+                    "holdResume",
+                    "warning",
+                    "Maximum hold duration reached. Manual Resume required."
+                  );
+                  window.GcbDebug.log(
+                    "INFO",
+                    "HOLD_RESUME_WARNING",
+                    "Maximum hold duration reached. Manual Resume required."
+                  );
+                }
+                renderStatusLines();
+              } else if (type === "RESUMED_MANUAL") {
+                clearHoldAlertNotificationMarker(message.record);
                 if (window.GcbDebug) {
                   window.GcbDebug.setStatus("holdResume", "success", "Chat resumed manually.");
                   window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Manual Resume completed.");
                 }
                 renderStatusLines();
               } else if (type === "RESUMED_AUTO") {
+                clearHoldAlertNotificationMarker(message.record);
                 if (window.GcbDebug) {
                   window.GcbDebug.setStatus("holdResume", "success", "Chat resumed automatically.");
                   window.GcbDebug.log("INFO", "HOLD_RESUME_RECOVERED", "Automatic Resume completed.");
+                }
+                renderStatusLines();
+              } else if (type === "HOLD_STARTED") {
+                clearHoldAlertNotificationMarker(message.record);
+                if (window.GcbDebug) {
+                  window.GcbDebug.setStatus("holdResume", "pending", "Chat is currently on hold.");
                 }
                 renderStatusLines();
               }

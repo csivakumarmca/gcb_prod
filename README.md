@@ -1100,3 +1100,47 @@ Versions:
 - ChatMonitor UI: `v1.2.49`
 - Prospects: `Prospects_v3.36`
 - Cache: `172290`
+
+
+## v1.7.2.91-repeated-hold-warning-fix
+
+Repeated hold-cycle status handling:
+
+```text
+HOLD_STARTED
+→ Pending - Chat is currently on hold.
+
+HOLD_EXCEEDED
+→ Warning - Maximum hold duration reached. Manual Resume required.
+
+RESUMED_MANUAL / RESUMED_AUTO
+→ Success
+```
+
+The warning is now driven directly by the shared `HOLD_EXCEEDED` event, so it works on the first and subsequent hold attempts.
+
+Versions:
+
+- AFT GCB: `v1.7.2.91-repeated-hold-warning-fix`
+- ChatMonitor UI: `v1.2.50`
+- Prospects: `Prospects_v3.37`
+- Cache: `172291`
+
+
+## v1.7.2.92-max-hold-attempts-index-warning
+
+Maximum hold-attempt warning is synchronized to the Index page:
+
+```text
+You have already reached the maximum allowed hold attempts.
+→ Index Hold / Resume status: Warning
+```
+
+When available, the current and maximum attempt counts are shown.
+
+Versions:
+
+- AFT GCB: `v1.7.2.92-max-hold-attempts-index-warning`
+- ChatMonitor UI: `v1.2.51`
+- Prospects: `Prospects_v3.38`
+- Cache: `172292`

@@ -2739,13 +2739,36 @@
       }
 
       if (action === "HOLD" && getEffectiveHoldCount() >= CONFIG.maxHoldAttempts) {
-        const validationMessage = "⚠️  ⛔ You have already reached the maximum allowed hold attempts. ⏱ (" + getEffectiveHoldCount() + " / " + CONFIG.maxHoldAttempts + ")";
-        startAttentionAlert(validationMessage, "error", "⛔ Max Hold Reached");
-        setStatus(validationMessage, "error");
-        addDebug("VALIDATION_BLOCK", "Max hold attempts reached. trigger=" + safeString(triggerSource) + " | effectiveCount=" + getEffectiveHoldCount() + " | max=" + CONFIG.maxHoldAttempts);
+        const currentHoldCount = getEffectiveHoldCount();
+        const validationMessage = "⚠️  ⛔ You have already reached the maximum allowed hold attempts. ⏱ (" + currentHoldCount + " / " + CONFIG.maxHoldAttempts + ")";
+
+        startAttentionAlert(validationMessage, "warning", "⛔ Max Hold Reached");
+        setStatus(validationMessage, "warning");
+
+        broadcastCentralHoldEvent("MAX_ATTEMPTS_BLOCKED", {
+          conversationId: CONFIG.conversationId || "",
+          agentParticipantId: CONFIG.agentParticipantId || CONFIG.participantId || "",
+          currentHoldCount: currentHoldCount,
+          maxHoldAttempts: CONFIG.maxHoldAttempts,
+          source: "holdresume.html",
+          time: new Date().toISOString()
+        });
+
+        addDebug(
+          "VALIDATION_BLOCK",
+          "Max hold attempts reached. trigger=" + safeString(triggerSource) +
+          " | effectiveCount=" + currentHoldCount +
+          " | max=" + CONFIG.maxHoldAttempts
+        );
+
         updateButtonState();
         participantTrace.push("validation::MAX_ATTEMPTS_BLOCKED");
-        await writeHoldResumeParticipantLogSafe("BLOCKED", "VALIDATION", participantTrace.join(" ==> "), validationMessage);
+        await writeHoldResumeParticipantLogSafe(
+          "BLOCKED",
+          "VALIDATION",
+          participantTrace.join(" ==> "),
+          validationMessage
+        );
         return { blocked: true, reason: "MAX_ATTEMPTS" };
       }
 
