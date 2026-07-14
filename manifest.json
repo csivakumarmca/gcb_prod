@@ -1,7 +1,7 @@
 {
   "projectShortName": "RAKBANK GCB",
   "projectFullName": "RAKBANK Genesys Context Bridge",
-  "version": "v1.0.0-prod",
+  "version": "v1.7.2.72-customer-details-html",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -23,8 +23,31 @@
     "css/send-message.css"
   ],
   "notes": [
-    "Initial PROD v1.0.0 release candidate.",
-    "No Joined/Greeting, MonitorWake, duplicate-control, OAuth/MFA, notification, Hold/Resume, or Prospects logic changed."
+    "SendMsg page removed because Agent Joined/Greeting send logic is now handled by Chat Monitor.",
+    "index.html is the single OAuth/MFA callback and router page.",
+    "Use index.html?page=chatmonitor for Client App. Use direct holdresume.html, holdtimer.html, and prospects.html URLs in Agent Script to avoid router flicker.",
+    "chatmonitor.html is split into css/chatmonitor.css and js/chatmonitor.js.",
+    "Direct business pages silently start OAuth/MFA only when token is missing, then index.html restores the original page URL after login.",
+    "v1.7.2.47 reapplies safe UI, diagnostic download, and OAuth/MFA refresh recovery enhancements on top of the confirmed v1.7.2.45 transfer-working baseline without changing ChatMonitor send/transfer logic.",
+    "v1.7.2.49 replaces the long Role list in Support View with the Agent Participant ID and current communication state, improving transfer troubleshooting without changing ChatMonitor send or transfer logic.",
+    "v1.7.2.55 adds optional AFT_GCB_AgentTransferGreetingText and AFT_GCB_SupervisorTransferGreetingText attributes. Transfer greetings use these values when present and fall back to the existing initial Greeting text when missing. Joined-message text and duplicate-control behavior are unchanged.",
+    "v1.7.2.56 uses language-specific customer-facing joined and greeting attributes, one common language-specific transfer greeting for agent/supervisor transfers, and common non-bilingual agent-screen hold labels.",
+    "v1.7.2.57 aligns ChatMonitor GCB Participant Config Status with the 42 actual Data Table participant attributes, removes four unrelated optional/runtime rows from that status table, updates the summary label, and adds a chatmonitor.js cache-buster. Message-send logic is unchanged.",
+    "v1.7.2.58 removes maxHoldAttempts URL/participant override from Hold Summary and uses fixed fallback 3. Agent Script remains the owner of maximum hold-attempt enforcement. ChatMonitor greeting/transfer/send logic is unchanged.",
+    "v1.7.2.59 aligns the active Hold Summary, Hold Timer, and Prospects HTML pages with Architect-populated participant attributes. URL business-configuration parameters no longer override Data Table values. Hold Summary keeps max hold attempts fixed at 3 as requested.",
+    "v1.7.2.60 prevents Hold Summary API storms by using a single active refresh, caching message details, reading full/current-session messages once, stopping immediately on HTTP 429, and removing full transcript reloads from timer storage/broadcast events. It also stops timer/title blinking immediately when Resume starts or the hold record is cleared. ChatMonitor send/transfer logic is unchanged.",
+    "v1.7.2.61 restores Hold Summary count synchronization after the v1.7.2.60 rate-limit optimization. A single debounced cached refresh runs after HOLD/RESUME timer events become quiet, and newer local attempt/count/time values are preserved when the Genesys transcript is temporarily delayed. ChatMonitor greeting/transfer logic is unchanged.",
+    "v1.7.2.62 fixes Prospects Submit validation by reading the canonical Agent Script URL parameters agentParticipantId and agentCommunicationId. Legacy participantId and communicationId remain as fallback aliases. No Hold/Resume or ChatMonitor logic was changed.",
+    "v1.7.2.63 adds Data Table-controlled optional chat disconnect after successful Prospects submission. AFT_GCB_DisconnectAfterProspectsSubmit=false applies wrap-up and saves Prospects data only; true performs the same steps and then disconnects the current agent messaging communication. ChatMonitor and Index participant-config validation now expect 43 required GCB attributes. ChatMonitor greeting/transfer logic is unchanged.",
+    "v1.7.2.64 is a technical-only ChatMonitor reliability patch. It adds coordinated OAuth/MFA recovery between browser tabs without storing access tokens in localStorage, validates OAuth during monitor startup, automatically recreates the notification channel and WebSocket after unexpected closure/long idle/network resume, adds visibility/focus/online/pageshow/watchdog recovery, and preserves manual stop behavior. No joined/greeting, transfer, language, duplicate-control, Hold/Resume, or Prospects business logic was changed.",
+    "v1.7.2.65 adds monitorwake.html for a hidden Agent Script Web Page. It publishes current interaction context and requests ChatMonitor recovery. ChatMonitor remains the only sender and retains existing OAuth, role/language/transfer and duplicate-control ownership. A visible Restart Monitor fallback is included. Index support display now prefers canonical Agent Script communication IDs.",
+    "v1.7.2.66 allows monitorwake.html to become a hidden ChatMonitor host when no active monitor heartbeat exists. A cross-tab leader lease ensures only one ChatMonitor owns the Genesys notification WebSocket. A later-opened visible GCB Client App remains in standby until the hidden owner closes. Placeholder values such as [Interaction ID] are excluded from active-interaction recovery. No joined/greeting, transfer, supervisor, language, Hold/Resume, Prospects, or duplicate participant-data business rules were changed.",
+    "v1.7.2.67 centralizes OAuth/environment runtime values from the Interaction Widget URL. index.html publishes langTag, gcTargetEnv, gcHostOrigin, usePopupAuth, clientId, and region to AFT_GCB_RUNTIME_CONFIG_V1 before OAuth/MFA processing. monitorwake.html merges that shared runtime configuration with the current Agent Script interaction IDs before hidden ChatMonitor startup. The Agent Script monitorwake URL therefore needs only its existing interaction common parameters, forceStart=true, and cache v=172267. No greeting, transfer, supervisor, language-selection, Hold/Resume, Prospects, or duplicate-send business rules were changed.",
+    "v1.7.2.68 production-safety patch: maximum five recent logged-in-user interaction contexts and five ChatMonitor records; recovery candidates limited to the newest five and 15 minutes; standard Genesys REST calls limited to three total attempts for transient/network failures; agent-leg resolver limited to three snapshot attempts; notification reconnect limited to three attempts followed by a five-minute cooldown; production logs reduced to the latest 50 concise events; monitorwake runtime configuration wait limited to five local checks; one page-load fallback validates the current connected conversation and sends the existing Agent/Supervisor Joined plus Greeting sequence through the same duplicate and participant-data safeguards. OAuth/MFA logic and business message rules are unchanged.",
+    "v1.7.2.69 fixes the MonitorWake page-load fallback. A valid Agent Script agentCommunicationId is now used when the conversation snapshot does not expose the communication ID. The fallback directly creates the current connected communication-leg record and runs the existing Joined/Greeting sender with unchanged transfer, supervisor, language, and duplicate controls. Unresolved fallback failures are now visible in Agent, Support, and Admin conversation status tables with a clear not-sent reason and recovery source.",
+    "v1.7.2.70 clarifies and preserves the independent notification reconnect policy: three reconnect attempts per cycle at 2s, 5s, and 10s, followed by a five-minute cooldown, then a new reconnect cycle. This is separate from the maximum-three-attempt standard Genesys REST API policy. Additional cycle/attempt diagnostics were added; joined/greeting, monitorwake fallback, duplicate controls, OAuth/MFA, Hold/Resume, and Prospects behavior are unchanged.",
+    "v1.7.2.71 reduces the one-time MonitorWake page-load fallback delay from 4 seconds to 2 seconds. This speeds up Joined/Greeting delivery when the hidden ChatMonitor has just started, while preserving the same duplicate locks, participant-data sent keys, notification-first behavior, and existing Agent/Transfer/Supervisor/language rules. No retry, reconnect, Hold/Resume, Prospects, or OAuth/MFA logic changed.",
+    "DEV v1.7.2.72 moves the complete approved Customer Details section into prospects.html. Customer Name, Customer Type, and Mobile Number are read-only. Card No / Account is selected inside HTML. On Submit, the selected value is stored in participant data under pia_ddl_Selected_AccountNumber and Prospects/Agent selected CardAccount attributes before the existing wrap-up assignment flow completes. The production package is unchanged."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -35,13 +58,7 @@
       "Keeps package metadata aligned with the deployed static file set."
     ]
   },
-  "environment": "PRODUCTION",
-  "releaseTrack": "PROD",
-  "sourceDevBaseline": "v1.7.2.71-faster-page-load-fallback",
-  "releaseNotes": [
-    "Initial production package.",
-    "Created from confirmed DEV baseline v1.7.2.71-faster-page-load-fallback.",
-    "Production-only README included.",
-    "No business logic changes from the confirmed DEV baseline."
-  ]
+  "environment": "DEVELOPMENT",
+  "releaseTrack": "DEV",
+  "sourceBaseline": "v1.7.2.71-faster-page-load-fallback"
 }
