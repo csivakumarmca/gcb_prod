@@ -1,7 +1,7 @@
 # AFT Genesys Context Bridge (AFT GCB)
 
 - AFT GCB: `v1.7.2.95-participant-data-only`
-- ChatMonitor UI: `v1.2.54`
+- ChatMonitor UI: `v1.0.0`
 - Prospects: `Prospects_v3.41`
 - Cache: `172295`
 - Environment: `DEVELOPMENT`
