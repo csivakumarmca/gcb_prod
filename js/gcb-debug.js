@@ -3,12 +3,13 @@
  * Purpose: Shared debug/status bridge for GCB modules.
  *          Writes module status and diagnostic messages for support troubleshooting.
  */
-/* GCB Central Debug Bridge v1.1.2 */
+/* GCB Central Debug Bridge v1.2.0 */
 (function (global) {
   "use strict";
 
   const STORAGE_KEY = "GCB_CENTRAL_DEBUG_EVENTS";
   const STATUS_KEY = "GCB_CENTRAL_STATUS";
+  const ENABLED_KEY = "AFT_GCB_BROWSER_DEBUG_ENABLED_V1";
   const MAX_EVENTS = 500;
   const SENSITIVE_PARAMS = new Set([
     "access_token", "id_token", "refresh_token", "token", "code", "state", "oauth_token", "authorization"
@@ -60,6 +61,23 @@
   }
   function writeJson(key, value) {
     try { global.localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+  }
+  function parseBool(value, fallback) {
+    const text = safeString(value).trim().toLowerCase();
+    if (["true", "yes", "1", "y"].includes(text)) return true;
+    if (["false", "no", "0", "n"].includes(text)) return false;
+    return fallback;
+  }
+  function isEnabled() {
+    try {
+      const raw = global.localStorage.getItem(ENABLED_KEY);
+      return raw === null ? true : parseBool(raw, true);
+    } catch (_) { return true; }
+  }
+  function setEnabled(value) {
+    const enabled = parseBool(value, true);
+    try { global.localStorage.setItem(ENABLED_KEY, enabled ? "true" : "false"); } catch (_) {}
+    return enabled;
   }
   function readEvents() {
     const parsed = readJson(STORAGE_KEY, []);
@@ -131,6 +149,7 @@
   }
 
   function log(level, step, message, data) {
+    if (!isEnabled()) return null;
     const event = {
       time: now(),
       level: safeString(level || "INFO").toUpperCase(),
@@ -159,7 +178,7 @@
   }
 
   if (!global.GcbDebug) {
-    global.GcbDebug = { log, getEvents: readEvents, clear, exportText, maskUrl, storageKey: STORAGE_KEY, setStatus, clearStatus, getStatuses: readStatuses, clearStatuses };
+    global.GcbDebug = { log, getEvents: readEvents, clear, exportText, maskUrl, storageKey: STORAGE_KEY, setStatus, clearStatus, getStatuses: readStatuses, clearStatuses, isEnabled, setEnabled };
   }
 
   if (!global.__GCB_DEBUG_CONSOLE_WRAPPED__) {

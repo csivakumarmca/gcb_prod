@@ -1164,7 +1164,9 @@
       holdMaxTimeAlertText: "Maximum hold duration reached. Please resume the chat.",
       holdMaxAttemptsAlertText: "You have reached the maximum allowed hold attempts.",
       holdAlertTitle: "Hold Alert",
-      autoResumeSentText: "Auto resume sent."
+      autoResumeSentText: "Auto resume sent.",
+      enableParticipantLogs: true,
+      enableBrowserDebug: true
     };
 
     function attrText(attrs, name, fallback) {
@@ -1215,6 +1217,9 @@
       CONFIG.holdMaxAttemptsAlertText = attrText(attrs, "AFT_GCB_HoldMaxAttemptsAlertText", CONFIG.holdMaxAttemptsAlertText);
       CONFIG.holdAlertTitle = attrText(attrs, "AFT_GCB_HoldAlertTitle", CONFIG.holdAlertTitle);
       CONFIG.autoResumeSentText = attrText(attrs, "AFT_GCB_AutoResumeSentText", CONFIG.autoResumeSentText);
+      CONFIG.enableParticipantLogs = attrBool(attrs, "AFT_GCB_EnableParticipantLogs", CONFIG.enableParticipantLogs);
+      CONFIG.enableBrowserDebug = attrBool(attrs, "AFT_GCB_EnableBrowserDebug", CONFIG.enableBrowserDebug);
+      try { if (window.GcbDebug && window.GcbDebug.setEnabled) window.GcbDebug.setEnabled(CONFIG.enableBrowserDebug); } catch (_) {}
       addDebug("PARTICIPANT_CONFIG_APPLIED", "maxHoldAttempts=fixed-3 | maxHoldTime=" + CONFIG.maxHoldTime + " | autoResumeEnabled=" + CONFIG.autoResumeEnabled);
     }
     async function loadParticipantConfig(token) {
@@ -1889,6 +1894,10 @@
         const token = getAccessToken();
         const participantId = CONFIG.agentParticipantId || CONFIG.participantId;
         if (!token || !CONFIG.conversationId || !participantId) return;
+        if (!CONFIG.enableParticipantLogs) {
+          addDebug("PARTICIPANT_LOG_SKIPPED", "AFT_GCB_EnableParticipantLogs=false");
+          return;
+        }
         const logParts = [
           new Date().toISOString(),
           safeString(step || "UNKNOWN"),

@@ -147,7 +147,9 @@
         holdAlertTitle:"Hold Alert",
         autoResumeSentText:"Auto resume sent.",
         compact:b("compact", true),
-        mode:String(p("mode", "")).toLowerCase()
+        mode:String(p("mode", "")).toLowerCase(),
+        enableParticipantLogs:true,
+        enableBrowserDebug:true
       };
       const API_BASE = "https://api." + CONFIG.region;
 
@@ -209,6 +211,9 @@
         CONFIG.holdMaxAttemptsAlertText = attrText(attrs, "AFT_GCB_HoldMaxAttemptsAlertText", CONFIG.holdMaxAttemptsAlertText);
         CONFIG.holdAlertTitle = attrText(attrs, "AFT_GCB_HoldAlertTitle", CONFIG.holdAlertTitle);
         CONFIG.autoResumeSentText = attrText(attrs, "AFT_GCB_AutoResumeSentText", CONFIG.autoResumeSentText);
+        CONFIG.enableParticipantLogs = attrBool(attrs, "AFT_GCB_EnableParticipantLogs", CONFIG.enableParticipantLogs);
+        CONFIG.enableBrowserDebug = attrBool(attrs, "AFT_GCB_EnableBrowserDebug", CONFIG.enableBrowserDebug);
+        try { if (window.GcbDebug && window.GcbDebug.setEnabled) window.GcbDebug.setEnabled(CONFIG.enableBrowserDebug); } catch (_) {}
         return true;
       }
 
@@ -333,6 +338,10 @@
           const token=getAccessToken();
           const participantId=CONFIG.agentParticipantId || CONFIG.participantId;
           if (!token || !CONFIG.conversationId || !participantId) return;
+          if (!CONFIG.enableParticipantLogs) {
+            try { if (window.GcbDebug) window.GcbDebug.log("INFO","PARTICIPANT_LOG_SKIPPED","AFT_GCB_EnableParticipantLogs=false"); } catch (_) {}
+            return;
+          }
           const logParts=[
             new Date().toISOString(),
             safe(step || "UNKNOWN"),

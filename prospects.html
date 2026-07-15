@@ -1,7 +1,7 @@
 <!--
   Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
   Purpose: Prospects wrap-up page for Contact Reason and Interaction Outcome selection.
-           Loads dynamic Data Table values, filters outcomes, and submits selected values.
+           Loads Architect-prepared participant values, filters outcomes, and submits selected values.
            Can open directly and silently recover through index.html only when token is missing.
 -->
 <!doctype html>
@@ -9,7 +9,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prospects v3.2 Direct Auth Fallback</title>
+    <title>Prospects_v3.41</title>
     <link rel="stylesheet" href="./css/prospects.css?v=100000" />
 </head>
   <body>
@@ -140,21 +140,12 @@
       const API_BASE = `https://api.${GENESYS_REGION}`;
       const SEARCH_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Logs_Prospects";
       const ASSIGN_DEBUG_ATTRIBUTE_NAME = "AFT_GCB_Logs_Prospects";
+      let ENABLE_PARTICIPANT_LOGS = true;
+      let ENABLE_BROWSER_DEBUG = true;
       const DEBUG_ATTRIBUTE_MAX_LENGTH = 20000;
       const draftKey = `RAK_PROSPECTS_DRAFT_${context.conversationId}_${context.communicationId}`;
       const submitKey = `RAK_PROSPECTS_SUBMITTED_${context.conversationId}_${context.communicationId}`;
 
-      const actionConfig = {
-        all: getParam("prospectsDataActionId"),
-        type: getParam("typeActionId") || getParam("typeOfInteractionActionId"),
-        contact: getParam("contactReasonActionId"),
-        outcome: getParam("interactionOutcomeActionId") || getParam("outcomeActionId"),
-      };
-
-      const dataTableConfig = {
-        types: "bc945049-40ea-4714-bd3f-4e552659a0e8",
-        prospects: "85f5ecc1-0f16-423c-b91b-cea46bac40d7",
-      };
 
       const wrapupConfig = {
         createIfMissing: false,
@@ -167,24 +158,6 @@
       let INTERACTION_OUTCOME_SEPARATOR = CONTACT_REASON_SEPARATOR;
       let INTERACTION_OUTCOME_MULTI_SELECT = false;
 
-      const dataTableColumnConfig = {
-        typeOfInteraction: buildColumnAliases(
-          getParam("typeColumnName"),
-          ["Interaction Type", "Interaction_Type", "TypeOfInteraction", "typeOfInteraction", "InteractionType", "interactionType", "Type", "type", "Name", "name", "label", "value"]
-        ),
-        contactReason: buildColumnAliases(
-          getParam("contactReasonColumnName"),
-          ["Contact Reason", "ContactReason", "contactReason", "Contact_Reason", "Reason", "reason", "contact_reason", "Name", "name"]
-        ),
-        interactionOutcome: buildColumnAliases(
-          getParam("interactionOutcomeColumnName") || getParam("outcomeColumnName"),
-          ["Interaction Outcome", "InteractionOutcome", "interactionOutcome", "Interaction_Outcome", "Outcome", "outcome", "Result", "result", "interaction_outcome", "Name", "name"]
-        ),
-        active: buildColumnAliases(
-          getParam("activeColumnName"),
-          ["Active", "active", "IsActive", "isActive", "Status", "status"]
-        ),
-      };
 
       const participantProspectData = {
         interactionTypeListJson: "",
@@ -392,23 +365,6 @@
         };
       }
 
-      function buildColumnAliases(primaryColumnName, fallbackColumnNames) {
-        const aliases = [];
-        const addAlias = (value) => {
-          String(value || "")
-            .split(/[|,]/)
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .forEach((item) => {
-              if (!aliases.some((existing) => normalizeFieldName(existing) === normalizeFieldName(item))) {
-                aliases.push(item);
-              }
-            });
-        };
-        addAlias(primaryColumnName);
-        addAlias((fallbackColumnNames || []).join("|"));
-        return aliases;
-      }
 
       function participantAttrText(attrs, name, fallback) {
         const value = attrs && Object.prototype.hasOwnProperty.call(attrs, name) ? attrs[name] : undefined;
@@ -460,6 +416,9 @@
         CONTACT_REASON_SEPARATOR = participantAttrText(attrs, "AFT_GCB_ContactReasonSeparator", CONTACT_REASON_SEPARATOR);
         INTERACTION_OUTCOME_SEPARATOR = participantAttrText(attrs, "AFT_GCB_InteractionOutcomeSeparator", CONTACT_REASON_SEPARATOR);
         INTERACTION_OUTCOME_MULTI_SELECT = participantAttrBool(attrs, "AFT_GCB_InteractionOutcomeMultiSelect", INTERACTION_OUTCOME_MULTI_SELECT);
+        ENABLE_PARTICIPANT_LOGS = participantAttrBool(attrs, "AFT_GCB_EnableParticipantLogs", ENABLE_PARTICIPANT_LOGS);
+        ENABLE_BROWSER_DEBUG = participantAttrBool(attrs, "AFT_GCB_EnableBrowserDebug", ENABLE_BROWSER_DEBUG);
+        try { if (window.GcbDebug && window.GcbDebug.setEnabled) window.GcbDebug.setEnabled(ENABLE_BROWSER_DEBUG); } catch (_) {}
       }
 
       async function init() {
@@ -562,14 +521,10 @@
           `agentParticipantId: ${context.participantId || "[missing]"}`,
           `region: ${GENESYS_REGION || "[missing]"}`,
           `clientId: ${OAUTH_CLIENT_ID || "[missing]"}`,
-          `typeDataTableId: ${dataTableConfig.types || "[missing]"}`,
           `mappingSource: participant data`,
           `contactReasonListJson: ${participantProspectData.contactReasonListJson ? "[available]" : "[missing]"}`,
           `interactionOutcomeListJson: ${participantProspectData.interactionOutcomeListJson ? "[available]" : "[missing]"}`,
           `interactionTypeListJson: ${participantProspectData.interactionTypeListJson ? "[available]" : "[not supplied]"}`,
-          `type column aliases: ${dataTableColumnConfig.typeOfInteraction.join(" | ")}`,
-          `contact column aliases: ${dataTableColumnConfig.contactReason.join(" | ")}`,
-          `outcome column aliases: ${dataTableColumnConfig.interactionOutcome.join(" | ")}`,
           "",
           `typeRows loaded: ${state.debugInfo.typeRows}`,
           `mappingRows loaded: ${state.debugInfo.mappingRows}`,
@@ -751,28 +706,6 @@
         );
       }
 
-      async function fetchDataTableRows(token, dataTableId) {
-        const rows = [];
-        let pageNumber = 1;
-        let pageCount = 1;
-
-        do {
-          const url = `${API_BASE}/api/v2/flows/datatables/${encodeURIComponent(dataTableId)}/rows?pageSize=500&pageNumber=${pageNumber}&showbrief=false`;
-          const response = await fetch(url, {
-            method: "GET",
-            headers: { Authorization: "Bearer " + token },
-          });
-          const text = await response.text();
-          const payload = parseJson(text);
-          if (!response.ok) throw createHttpError(payload.message || payload.error || `Data Table read failed: ${response.status}`, response.status, payload);
-
-          rows.push(...findFirstArray(payload));
-          pageCount = Number(payload.pageCount || payload.page_count || 1);
-          pageNumber += 1;
-        } while (pageNumber <= pageCount);
-
-        return rows;
-      }
 
       function buildActionInput(extra = {}) {
         return {
@@ -782,85 +715,6 @@
           typeOfInteraction: typeSelect.value,
           ...extra,
         };
-      }
-
-      async function executeDataAction(token, actionId, input) {
-        const response = await fetch(`${API_BASE}/api/v2/integrations/actions/${encodeURIComponent(actionId)}/execute`, {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(input || {}),
-        });
-
-        const text = await response.text();
-        const payload = parseJson(text);
-        if (!response.ok) throw createHttpError(payload.message || payload.error || `Data Action failed: ${response.status}`, response.status, payload);
-        return payload;
-      }
-
-      function normalizeOptions(payload) {
-        const source = findFirstArray(payload);
-        return uniqueSortedOptions(source.map((item) => {
-          const row = unwrapDataRow(item);
-          if (!isActiveRow(row)) return { label: "", value: "" };
-          const label =
-            getFirstField(row, ["label", "name", "displayName", "value", "key"]) ||
-            getFirstField(row, ["Interaction Type", "TypeOfInteraction", "typeOfInteraction", "InteractionType", "interactionType"]) ||
-            getFirstField(row, ["Contact Reason", "ContactReason", "contactReason", "Contact_Reason"]) ||
-            getFirstField(row, ["Interaction Outcome", "InteractionOutcome", "interactionOutcome", "Outcome", "outcome"]) ||
-            "";
-          const value = getFirstField(row, ["value", "key", "id"]) || label;
-          const typeOfInteraction = getTypeValue(row);
-          return {
-            label: cleanOptionValue(label),
-            value: cleanOptionValue(value || label),
-            typeOfInteraction: cleanOptionValue(typeOfInteraction),
-          };
-        }));
-      }
-
-      function normalizeTypeRows(rows) {
-        return uniqueSortedOptions(rows.map((item) => {
-          const row = unwrapDataRow(item);
-          if (!isActiveRow(row)) return { label: "", value: "" };
-          const label = cleanOptionValue(getFirstField(row, dataTableColumnConfig.typeOfInteraction) || getMeaningfulFallbackField(row));
-          return { label, value: label };
-        }));
-      }
-
-      function normalizeTableRow(item) {
-        const row = unwrapDataRow(item);
-        return {
-          typeOfInteraction: cleanOptionValue(getTypeValue(row)),
-          contactReason: cleanOptionValue(getFirstField(row, dataTableColumnConfig.contactReason)),
-          interactionOutcome: cleanOptionValue(getFirstField(row, dataTableColumnConfig.interactionOutcome)),
-          active: isActiveRow(row),
-        };
-      }
-
-      function unwrapDataRow(item) {
-        if (!item || typeof item !== "object") return {};
-
-        // Genesys Data Table rows normally return values inside row.values when showbrief=false.
-        // Keep top-level properties also, so key/id/debug fields are still available.
-        const mergedRow = { ...item };
-
-        if (item.values && typeof item.values === "object") {
-          Object.assign(mergedRow, item.values);
-        }
-        if (item.fields && typeof item.fields === "object") {
-          Object.assign(mergedRow, item.fields);
-        }
-        if (item.properties && typeof item.properties === "object") {
-          Object.assign(mergedRow, item.properties);
-        }
-        if (item.data && typeof item.data === "object") {
-          Object.assign(mergedRow, item.data);
-        }
-
-        return mergedRow;
       }
 
       function rebuildDependentOptionsFromRows() {
@@ -920,50 +774,6 @@
           }
         });
         return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
-      }
-
-      function getFirstField(row, names) {
-        for (const name of names) {
-          const value = row && row[name];
-          if (value !== undefined && value !== null && cleanOptionValue(value)) return cleanOptionValue(value);
-        }
-        const normalizedLookup = {};
-        Object.keys(row || {}).forEach((key) => {
-          normalizedLookup[normalizeFieldName(key)] = row[key];
-        });
-        for (const name of names) {
-          const value = normalizedLookup[normalizeFieldName(name)];
-          if (value !== undefined && value !== null && cleanOptionValue(value)) return cleanOptionValue(value);
-        }
-        return "";
-      }
-
-      function getTypeValue(row) {
-        return getFirstField(row, dataTableColumnConfig.typeOfInteraction);
-      }
-
-      function getMeaningfulFallbackField(row) {
-        const ignored = new Set(["key", "id", "active", "isactive", "status"]);
-        for (const [key, value] of Object.entries(row || {})) {
-          if (ignored.has(normalizeFieldName(key))) continue;
-          if (value !== undefined && value !== null && cleanOptionValue(value)) return cleanOptionValue(value);
-        }
-        return "";
-      }
-
-      function getSampleColumns(item) {
-        const row = unwrapDataRow(item);
-        return Object.keys(row || {}).slice(0, 12).join(", ");
-      }
-
-      function normalizeFieldName(name) {
-        return String(name || "").toLowerCase().replace(/[\s_-]+/g, "");
-      }
-
-      function isActiveRow(row) {
-        const value = getFirstField(row, dataTableColumnConfig.active);
-        if (!value) return true;
-        return ["true", "yes", "y", "1", "active"].includes(value.toLowerCase());
       }
 
       function findFirstArray(payload) {
@@ -1563,6 +1373,10 @@ if (!interactionType) {
       async function updateDebugAttributeSafe(token, attributeName, logText) {
         try {
           if (!token || !attributeName || !context.conversationId || !context.participantId) return;
+          if (!ENABLE_PARTICIPANT_LOGS) {
+            try { if (window.GcbDebug) window.GcbDebug.log("INFO", "PARTICIPANT_LOG_SKIPPED", "AFT_GCB_EnableParticipantLogs=false"); } catch (_) {}
+            return;
+          }
           await setParticipantAttributes(token, {
             [attributeName]: truncateForAttribute(logText, DEBUG_ATTRIBUTE_MAX_LENGTH),
           });

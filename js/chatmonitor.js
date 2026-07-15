@@ -170,9 +170,9 @@ const EXPECTED_GCB_PARTICIPANT_ATTRIBUTES = [
   {group:'HOLD_LABEL', name:'AFT_GCB_HoldMaxAttemptsAlertText', required:true},
   {group:'HOLD_LABEL', name:'AFT_GCB_HoldAlertTitle', required:true},
   {group:'HOLD_LABEL', name:'AFT_GCB_AutoResumeSentText', required:true},
-  {group:'PROSPECTS', name:'AFT_GCB_ProspectsTypeDataTableId', required:true},
-  {group:'PROSPECTS', name:'AFT_GCB_ProspectsMappingDataTableId', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_InteractionOutcomeMultiSelect', required:true},
+  {group:'LOGGING', name:'AFT_GCB_EnableParticipantLogs', required:true},
+  {group:'LOGGING', name:'AFT_GCB_EnableBrowserDebug', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_ContactReasonSeparator', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_WrapupNameSeparator', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_CreateWrapupIfMissing', required:true},
@@ -1319,6 +1319,7 @@ function upsertRecord(conversationId,agent,comm,info,body,customer,participants=
   const recordId=[conversationId, participantId||'NO_PARTICIPANT', communicationId||'NO_COMM'].join('|');
   const existing=conversations.get(recordId)||{};
   const customerAttrs=customer.attributes||{};
+  applyBrowserDebugFlag(customerAttrs);
   refreshBannerLayoutFromAttributes(customerAttrs);
   const gcbConfig=getGcbMessageConfig(customerAttrs);
   if(currentUser?.id){ updateViewAccess({roleNames: Array.from(userRoleCache.values()).find(x=>x && Array.isArray(x.roleNames))?.roleNames || []}, gcbConfig); }
@@ -1681,11 +1682,28 @@ async function getLatestCustomerAttributes(rec){
     return {attrs:{}, customerParticipantId:rec.customerParticipantId || ''};
   }
 }
+function parseLoggingBool(value, fallback=true){
+  const text=String(value==null?'':value).trim().toLowerCase();
+  if(['true','yes','1','y'].includes(text)) return true;
+  if(['false','no','0','n'].includes(text)) return false;
+  return fallback;
+}
+function participantLogsEnabled(rec){
+  return parseLoggingBool(rec?.gcbParticipantAttributes?.AFT_GCB_EnableParticipantLogs, true);
+}
+function applyBrowserDebugFlag(attrs){
+  const enabled=parseLoggingBool(attrs?.AFT_GCB_EnableBrowserDebug, true);
+  try{ if(window.GcbDebug?.setEnabled) window.GcbDebug.setEnabled(enabled); }catch(_){}
+}
 async function writeChatMonitorAgentLogSafe(rec, status, stage, details){
   try{
     const participantId=String(rec?.participantId||'').trim();
     const conversationId=String(rec?.conversationId||'').trim();
     if(!conversationId || !participantId) return;
+    if(!participantLogsEnabled(rec)){
+      log('INFO',{participantLogSkipped:true,module:'ChatMonitor',reason:'AFT_GCB_EnableParticipantLogs=false'});
+      return;
+    }
     const value=[
       new Date().toISOString(),
       `version::${APP_VERSION}`,
@@ -1894,7 +1912,7 @@ function refreshParticipantConfigStatus(){
   const required=EXPECTED_GCB_PARTICIPANT_ATTRIBUTES.filter(x=>x.required).length;
   const okRequired=EXPECTED_GCB_PARTICIPANT_ATTRIBUTES.filter(x=>x.required && normalizeAttrValueForStatus(attrs[x.name])).length;
   const missing=required-okRequired;
-  const summary=rec ? `Conversation: ${shortId(rec.conversationId)} | Data Table Participant Config: ${okRequired}/${required} OK | Missing: ${missing}` : 'Waiting for active conversation participant data.';
+  const summary=rec ? `Conversation: ${shortId(rec.conversationId)} | Participant Config: ${okRequired}/${required} OK | Missing: ${missing}` : 'Waiting for active conversation participant data.';
   const rows=rec ? buildConfigStatusRows(attrs) : '<tr><td class="small" colspan="3">No participant data loaded yet.</td></tr>';
   const supportBody=$('supportConfigStatus'); if(supportBody) supportBody.innerHTML=rows;
   const adminBody=$('adminConfigStatus'); if(adminBody) adminBody.innerHTML=rows;

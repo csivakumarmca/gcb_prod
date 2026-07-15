@@ -23,12 +23,11 @@
     "css/send-message.css"
   ],
   "notes": [
-    "Initial production release v1.0.0, built from confirmed DEV baseline v1.7.2.94-production-review-hardening.",
-    "Includes production-review hardening validated in DEV.",
-    "Hold summary refresh does not overwrite active Hold/Resume warnings or final maximum-attempt results.",
-    "Maximum Hold duration and maximum-attempt conditions are consistently shown as Warning states.",
-    "Central hold records include currentHoldCount and maxHoldAttempts so manual and central auto-resume preserve the final-attempt warning.",
-    "No greeting, transfer, supervisor, language, duplicate-send, message-send, Hold count, timer, Prospects submit, or wrap-up business rules changed."
+    "Added participant-controlled logging flags.",
+    "AFT_GCB_EnableParticipantLogs controls only AFT_GCB_Logs_* PATCH calls.",
+    "AFT_GCB_EnableBrowserDebug controls browser diagnostic event storage.",
+    "Both flags default to true when missing for backward compatibility.",
+    "Operational participant attributes remain unchanged."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
@@ -41,7 +40,7 @@
   },
   "environment": "PRODUCTION",
   "releaseTrack": "PROD",
-  "sourceBaseline": "v1.7.2.94-production-review-hardening",
+  "sourceBaseline": "v1.7.2.96-logging-flags",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
   "customer": "RAKBANK",
