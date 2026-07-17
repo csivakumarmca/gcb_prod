@@ -170,6 +170,8 @@
         contactReasons: [],
         outcomes: [],
         prospectRows: [],
+        selectedContactReasons: new Map(),
+        selectedOutcomes: new Map(),
         debugInfo: {
           typeRows: 0,
           mappingRows: 0,
@@ -839,6 +841,8 @@
       }
 
       function resetContactReasonSelections() {
+        state.selectedContactReasons.clear();
+        state.selectedOutcomes.clear();
         Array.from(document.querySelectorAll('input[name="contactReason"]')).forEach((box) => {
           box.checked = false;
         });
@@ -851,6 +855,7 @@
 
       function refreshInteractionOutcomesForContact() {
         outcomeSearch.value = "";
+        state.selectedOutcomes.clear();
         const filteredOptions = getVisibleOutcomeOptions();
         renderOptions("outcome", filteredOptions);
         state.debugInfo.outcomeOptions = filteredOptions.length;
@@ -949,6 +954,28 @@
         wireOptionSelect(container, name);
       }
 
+      function getSelectionStore(name) {
+        return name === "contactReason" ? state.selectedContactReasons : state.selectedOutcomes;
+      }
+
+      function updateSelectionStore(name, value, label, checked) {
+        const store = getSelectionStore(name);
+        const key = normalizeOptionKey(value);
+        if (!key) return;
+
+        if (checked) {
+          if (name === "outcome" && !INTERACTION_OUTCOME_MULTI_SELECT) {
+            store.clear();
+          }
+          store.set(key, {
+            value: cleanOptionValue(value),
+            label: cleanOptionValue(label || value),
+          });
+        } else {
+          store.delete(key);
+        }
+      }
+
       function wireOptionSelect(container, name) {
         Array.from(container.querySelectorAll(`input[name="${name}"]`)).forEach((box) => {
           box.addEventListener("change", () => {
@@ -957,6 +984,13 @@
                 if (otherBox !== box) otherBox.checked = false;
               });
             }
+
+            updateSelectionStore(
+              name,
+              box.value,
+              box.dataset.label || box.value,
+              box.checked
+            );
 
             if (name === "contactReason") {
               refreshInteractionOutcomesForContact();
@@ -967,15 +1001,12 @@
       }
 
       function getSelectedOption(name) {
-        const selected = document.querySelector(`input[name="${name}"]:checked`);
-        return selected ? { value: selected.value, label: selected.dataset.label || selected.value } : { value: "", label: "" };
+        const selected = getSelectedOptions(name)[0];
+        return selected || { value: "", label: "" };
       }
 
       function getSelectedOptions(name) {
-        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((selected) => ({
-          value: selected.value,
-          label: selected.dataset.label || selected.value,
-        }));
+        return Array.from(getSelectionStore(name).values());
       }
 
       function getSelectedContactReasonText() {
@@ -1054,7 +1085,18 @@
       }
 
       function setCheckedValues(name, values) {
-        const valueSet = new Set((values || []).map(normalizeOptionKey));
+        const store = getSelectionStore(name);
+        store.clear();
+
+        const requestedValues = (values || []).map(cleanOptionValue).filter(Boolean);
+        const valueSet = new Set(requestedValues.map(normalizeOptionKey));
+        const sourceOptions = name === "contactReason" ? state.contactReasons : state.outcomes;
+
+        requestedValues.forEach((value) => {
+          const option = (sourceOptions || []).find((item) => valuesEqual(item.value, value));
+          updateSelectionStore(name, value, option ? option.label : value, true);
+        });
+
         Array.from(document.querySelectorAll(`input[name="${name}"]`)).forEach((item) => {
           item.checked = valueSet.has(normalizeOptionKey(item.value));
         });
