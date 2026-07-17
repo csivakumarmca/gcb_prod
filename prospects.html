@@ -905,7 +905,9 @@
         const text = String(value || "");
         if (!text) return [];
         return text
-          .split(/\s*(?:⇢|\|\|)\s*/g)
+          .replaceAll("||", "\n")
+          .replaceAll("\u21E2", "\n")
+          .split("\n")
           .map(cleanOptionValue)
           .filter(Boolean);
       }
@@ -914,7 +916,9 @@
         const text = String(value || "");
         if (!text) return [];
         return text
-          .split(/\s*(?:⇢|\|\|)\s*/g)
+          .replaceAll("||", "\n")
+          .replaceAll("\u21E2", "\n")
+          .split("\n")
           .map(cleanOptionValue)
           .filter(Boolean);
       }
