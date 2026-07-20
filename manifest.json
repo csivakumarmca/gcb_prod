@@ -1,7 +1,7 @@
 {
   "projectShortName": "AFT GCB",
   "projectFullName": "AFT Genesys Context Bridge",
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "basePath": "https://static-web-ivr-dev.rakbanktst.ae/genesys/gcb/",
   "oauthRedirectPage": "index.html",
   "pages": {
@@ -23,16 +23,17 @@
     "css/send-message.css"
   ],
   "notes": [
-    "Added participant-controlled logging flags.",
-    "AFT_GCB_EnableParticipantLogs controls only AFT_GCB_Logs_* PATCH calls.",
-    "AFT_GCB_EnableBrowserDebug controls browser diagnostic event storage.",
-    "Both flags default to true when missing for backward compatibility.",
-    "Operational participant attributes remain unchanged."
+    "Prospect wrap-up Search, Create, and Apply operations moved from prospects.html to the Process Automation Trigger workflow.",
+    "Prospects page saves participant attributes and writes AFT_GCB_ProspectWrapupStatus=PENDING separately and last.",
+    "Multiple Prospect submissions are supported using a unique AFT_GCB_ProspectRequestId for every submission.",
+    "Added required participant configuration AFT_GCB_ProspectMaxContactReasonSelections.",
+    "Current PROD configuration value 5 limits Contact Reason selection to five values.",
+    "Existing Chat Monitor, Hold/Resume, Hold Timer, OAuth/MFA recovery, transfer, greeting, and duplicate-control logic remain unchanged."
   ],
   "fileMetadata": {
     "author": "Sivakumar Chandrahasu",
     "created": "2026-07-07",
-    "updated": "2026-07-12",
+    "updated": "2026-07-20",
     "purpose": [
       "GCB package manifest for page inventory, version, and routing reference.",
       "Keeps package metadata aligned with the deployed static file set."
@@ -40,9 +41,9 @@
   },
   "environment": "PRODUCTION",
   "releaseTrack": "PROD",
-  "sourceBaseline": "v1.7.2.96-logging-flags",
+  "sourceBaseline": "AFT_GCB_PROD_v1.0.0_contact_search_selection_fix_v2",
   "productName": "AFT Genesys Context Bridge",
   "productShortName": "AFT GCB",
   "customer": "RAKBANK",
-  "productionCacheVersion": "100000"
+  "productionCacheVersion": "100001"
 }

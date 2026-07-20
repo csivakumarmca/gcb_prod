@@ -1,7 +1,7 @@
 <!--
-  Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-07
+  Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-20
   Purpose: Prospects wrap-up page for Contact Reason and Interaction Outcome selection.
-           Loads Architect-prepared participant values, filters outcomes, and submits selected values.
+           Loads Architect-prepared participant values, filters outcomes, and submits Prospect data to the workflow-trigger process.
            Can open directly and silently recover through index.html only when token is missing.
 -->
 <!doctype html>
@@ -9,8 +9,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prospects_v3.41</title>
-    <link rel="stylesheet" href="./css/prospects.css?v=100000" />
+    <title>Prospects_v3.42</title>
+    <link rel="stylesheet" href="./css/prospects.css?v=100001" />
 </head>
   <body>
     <main class="prospect-layout">
@@ -98,7 +98,7 @@
   <script>
       const DEFAULT_OAUTH_CLIENT_ID = "cc8cd8bf-0e14-4b14-9e4f-4849bc23ed00";
       const DEFAULT_GENESYS_REGION = "mypurecloud.ie";
-      const DEFAULT_APP_VERSION = "Prospects_v1.0.0";
+      const DEFAULT_APP_VERSION = "Prospects_v1.0.1";
       const STORAGE_CLIENT_ID = "gcb_clientId";
       const STORAGE_REGION = "gcb_region";
       const STORAGE_PROSPECTS_ORIGINAL_QUERY = "gcb_prospects_original_query";
@@ -144,19 +144,17 @@
       let ENABLE_BROWSER_DEBUG = true;
       const DEBUG_ATTRIBUTE_MAX_LENGTH = 20000;
       const draftKey = `RAK_PROSPECTS_DRAFT_${context.conversationId}_${context.communicationId}`;
-      const submitKey = `RAK_PROSPECTS_SUBMITTED_${context.conversationId}_${context.communicationId}`;
 
 
       const wrapupConfig = {
-        createIfMissing: false,
         disconnectAfterSubmit: false,
         nameSeparator: " ⟹ ",
-        pageSize: Number(getParam("wrapupPageSize") || 200),
       };
 
       let CONTACT_REASON_SEPARATOR = " ⇢ ";
       let INTERACTION_OUTCOME_SEPARATOR = CONTACT_REASON_SEPARATOR;
       let INTERACTION_OUTCOME_MULTI_SELECT = false;
+      let MAX_CONTACT_REASON_SELECTIONS = 0;
 
 
       const participantProspectData = {
@@ -379,6 +377,13 @@
         if (["false", "no", "0", "n"].includes(text)) return false;
         return fallback;
       }
+      function participantAttrNonNegativeInteger(attrs, name, fallback = 0) {
+        const raw = participantAttrText(attrs, name, "");
+        if (!String(raw || "").trim()) return fallback;
+        const parsed = Number.parseInt(String(raw).trim(), 10);
+        if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+        return parsed;
+      }
       function mergeParticipantAttributes(conversation) {
         const output = {};
         const participants = Array.isArray(conversation && conversation.participants) ? conversation.participants : [];
@@ -412,12 +417,16 @@
         participantProspectData.interactionOutcomeListJson =
           participantAttrText(attrs, "SI_Prospect_InteractionOutcomeListJson", "");
 
-        wrapupConfig.createIfMissing = participantAttrBool(attrs, "AFT_GCB_CreateWrapupIfMissing", wrapupConfig.createIfMissing);
         wrapupConfig.disconnectAfterSubmit = participantAttrBool(attrs, "AFT_GCB_DisconnectAfterProspectsSubmit", wrapupConfig.disconnectAfterSubmit);
         wrapupConfig.nameSeparator = participantAttrText(attrs, "AFT_GCB_WrapupNameSeparator", wrapupConfig.nameSeparator);
         CONTACT_REASON_SEPARATOR = participantAttrText(attrs, "AFT_GCB_ContactReasonSeparator", CONTACT_REASON_SEPARATOR);
         INTERACTION_OUTCOME_SEPARATOR = participantAttrText(attrs, "AFT_GCB_InteractionOutcomeSeparator", CONTACT_REASON_SEPARATOR);
         INTERACTION_OUTCOME_MULTI_SELECT = participantAttrBool(attrs, "AFT_GCB_InteractionOutcomeMultiSelect", INTERACTION_OUTCOME_MULTI_SELECT);
+        MAX_CONTACT_REASON_SELECTIONS = participantAttrNonNegativeInteger(
+          attrs,
+          "AFT_GCB_ProspectMaxContactReasonSelections",
+          MAX_CONTACT_REASON_SELECTIONS
+        );
         ENABLE_PARTICIPANT_LOGS = participantAttrBool(attrs, "AFT_GCB_EnableParticipantLogs", ENABLE_PARTICIPANT_LOGS);
         ENABLE_BROWSER_DEBUG = participantAttrBool(attrs, "AFT_GCB_EnableBrowserDebug", ENABLE_BROWSER_DEBUG);
         try { if (window.GcbDebug && window.GcbDebug.setEnabled) window.GcbDebug.setEnabled(ENABLE_BROWSER_DEBUG); } catch (_) {}
@@ -456,7 +465,6 @@
         submitButton.addEventListener("click", submitProspects);
 
         restoreDraft();
-        updateSubmitState();
 
         const token = getAccessToken();
         authRow.hidden = true;
@@ -526,6 +534,7 @@
           `mappingSource: participant data`,
           `contactReasonListJson: ${participantProspectData.contactReasonListJson ? "[available]" : "[missing]"}`,
           `interactionOutcomeListJson: ${participantProspectData.interactionOutcomeListJson ? "[available]" : "[missing]"}`,
+          `maxContactReasonSelections: ${MAX_CONTACT_REASON_SELECTIONS > 0 ? MAX_CONTACT_REASON_SELECTIONS : "[unlimited]"}`,
           `interactionTypeListJson: ${participantProspectData.interactionTypeListJson ? "[available]" : "[not supplied]"}`,
           "",
           `typeRows loaded: ${state.debugInfo.typeRows}`,
@@ -983,6 +992,22 @@
       function wireOptionSelect(container, name) {
         Array.from(container.querySelectorAll(`input[name="${name}"]`)).forEach((box) => {
           box.addEventListener("change", () => {
+            if (
+              name === "contactReason" &&
+              box.checked &&
+              MAX_CONTACT_REASON_SELECTIONS > 0 &&
+              state.selectedContactReasons.size >= MAX_CONTACT_REASON_SELECTIONS
+            ) {
+              box.checked = false;
+              showValidationError(
+                `Maximum ${MAX_CONTACT_REASON_SELECTIONS} Contact Reasons can be selected.`,
+                contactSearch
+              );
+              return;
+            }
+
+            validationMessage.textContent = "";
+
             if (name === "outcome" && !INTERACTION_OUTCOME_MULTI_SELECT && box.checked) {
               Array.from(container.querySelectorAll(`input[name="${name}"]`)).forEach((otherBox) => {
                 if (otherBox !== box) otherBox.checked = false;
@@ -1180,10 +1205,6 @@ if (!interactionType) {
           showValidationError("Unable to build wrap-up code name", outcomeSearch);
           return;
         }
-        if (sessionStorage.getItem(submitKey) === "true") {
-          showValidationError("Already submitted for this conversation", submitButton);
-          return;
-        }
         if (!context.conversationId || !context.participantId || !context.communicationId) {
           showValidationError("Missing conversationId, agentParticipantId or agentCommunicationId", submitButton);
           return;
@@ -1199,23 +1220,13 @@ if (!interactionType) {
           appendSubmitLog(`interactionOutcome::${interactionOutcomeText}`);
           appendSubmitLog(`wrapupName::${wrapupCodeName}`);
           await updateAssignDebugAttribute(token);
-          setRuntimeStatus("Finding wrap-up code...");
+          const requestId = `PROSPECT_${Date.now()}_${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+          appendSubmitLog(`requestId::${requestId}`);
 
-          const selectedWrapup = await findOrCreateWrapupCode(token, wrapupCodeName);
-          state.debugInfo.wrapupCodeId = selectedWrapup.id || "";
-          state.debugInfo.wrapupCreated = selectedWrapup.created ? "Y" : "N";
-          appendSubmitLog(selectedWrapup.created ? "WRAPUP_CREATED" : "WRAPUP_FOUND");
-          appendSubmitLog(`wrapupId::${selectedWrapup.id}`);
-          await updateAssignDebugAttribute(token);
+          setRuntimeStatus("Saving Prospect details and starting wrap-up processing...");
 
-          setRuntimeStatus("Assigning wrap-up code...");
-          await setMessageConversationWrapup(token, selectedWrapup.id, remarks.value);
-          appendSubmitLog("WRAPUP_ASSIGNED");
-          await updateAssignDebugAttribute(token);
-
-          setRuntimeStatus("Saving Prospects details...");
+          // Save the selected business data and workflow runtime values first.
           await setParticipantAttributes(token, {
-            // Uniform Prospects participant-data naming.
             Agent_Prospect_Selected_AccountOrCard_Id: selectedCardAccount.value || "",
             Agent_Prospect_Selected_AccountOrCard_Display: selectedCardAccount.label || "",
             Agent_Prospect_Selected_TypeOfInteraction: interactionTypeLabel,
@@ -1224,19 +1235,29 @@ if (!interactionType) {
             Agent_Prospect_Selected_CombinedWrapupCodeName: wrapupCodeName,
             Agent_Prospect_Selected_ChannelType: "Chat",
             Agent_Prospect_Selected_Remarks: remarks.value,
-
-            // Prospects submission metadata.
-            Agent_Prospect_WrapupCodeId: selectedWrapup.id || "",
-            Agent_Prospect_WrapupCreated: selectedWrapup.created ? "Y" : "N",
             Agent_Prospect_SubmittedDateTime: new Date().toISOString(),
 
-            // Participant-visible Prospects execution status.
+            // Runtime values required by the currently published Prospect workflow.
+            AFT_GCB_ProspectWrapupCodeName: wrapupCodeName,
+            AFT_GCB_ProspectAgentParticipantId: context.participantId,
+            AFT_GCB_ProspectAgentCommunicationId: context.communicationId,
+            AFT_GCB_ProspectRequestId: requestId
           });
-          appendSubmitLog("PARTICIPANT_DATA_SAVED");
+
+          appendSubmitLog("PROSPECT_DATA_SAVED");
+          await updateAssignDebugAttribute(token);
+
+          // PENDING must be written separately and last because it is the
+          // Process Automation Trigger match condition.
+          await setParticipantAttributes(token, {
+            AFT_GCB_ProspectWrapupStatus: "PENDING"
+          });
+
+          appendSubmitLog("WORKFLOW_TRIGGERED_STATUS_PENDING");
           await updateAssignDebugAttribute(token);
 
           if (wrapupConfig.disconnectAfterSubmit) {
-            setRuntimeStatus("Prospects saved. Disconnecting current chat...");
+            setRuntimeStatus("Prospect submitted. Disconnecting current chat...");
             appendSubmitLog("DISCONNECT_REQUESTED");
             await disconnectCurrentMessageCommunication(token);
             appendSubmitLog("COMMUNICATION_DISCONNECTED");
@@ -1244,12 +1265,11 @@ if (!interactionType) {
             appendSubmitLog("DISCONNECT_SKIPPED_FLAG_FALSE");
           }
 
-          sessionStorage.setItem(submitKey, "true");
           saveDraft();
           renderDebugParameters();
           const successMessage = wrapupConfig.disconnectAfterSubmit
-            ? "Wrap-up assigned, Prospects submitted, and chat disconnected successfully."
-            : "Wrap-up assigned and Prospects submitted successfully.";
+            ? "Prospect submitted, wrap-up processing started, and chat disconnected successfully."
+            : "Prospect submitted. Wrap-up processing started.";
           setRuntimeStatus(successMessage);
           centralStatus("prospects", "success", successMessage);
         } catch (error) {
@@ -1309,90 +1329,6 @@ if (!interactionType) {
         return `${left}${wrapupConfig.nameSeparator}${right}`;
       }
 
-      async function findOrCreateWrapupCode(token, wrapupCodeName) {
-        const wrapupCodes = await getAllWrapupCodes(token);
-        appendSubmitLog(`wrapupCount::${wrapupCodes.length}`);
-
-        const existing = findWrapupByName(wrapupCodes, wrapupCodeName);
-        if (existing) {
-          return { ...existing, created: false };
-        }
-
-        appendSubmitLog("WRAPUP_NOT_FOUND");
-        if (!wrapupConfig.createIfMissing) {
-          throw new Error("Wrap-up code not found: " + wrapupCodeName);
-        }
-
-        const created = await createWrapupCode(token, wrapupCodeName);
-        if (!created || !created.id) {
-          throw new Error("Wrap-up code created response did not return an id");
-        }
-        return { ...created, created: true };
-      }
-
-      async function getAllWrapupCodes(token) {
-        const rows = [];
-        let pageNumber = 1;
-        let pageCount = 1;
-        const pageSize = Math.max(1, wrapupConfig.pageSize || 200);
-
-        do {
-          const url = `${API_BASE}/api/v2/routing/wrapupcodes?pageSize=${encodeURIComponent(pageSize)}&pageNumber=${encodeURIComponent(pageNumber)}`;
-          const response = await fetch(url, {
-            method: "GET",
-            headers: { Authorization: "Bearer " + token },
-          });
-          const text = await response.text();
-          const payload = parseJson(text);
-          if (!response.ok) throw new Error(payload.message || payload.error || `Wrap-up code read failed: ${response.status}`);
-
-          rows.push(...findFirstArray(payload));
-          pageCount = Number(payload.pageCount || payload.page_count || 1);
-          pageNumber += 1;
-        } while (pageNumber <= pageCount);
-
-        return rows;
-      }
-
-      function findWrapupByName(wrapupCodes, wrapupCodeName) {
-        const target = normalizeSearchText(wrapupCodeName);
-        return (wrapupCodes || []).find((item) => normalizeSearchText(item && item.name) === target) || null;
-      }
-
-      async function createWrapupCode(token, wrapupCodeName) {
-        const response = await fetch(`${API_BASE}/api/v2/routing/wrapupcodes`, {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: wrapupCodeName }),
-        });
-        const text = await response.text();
-        const payload = parseJson(text);
-        if (!response.ok) throw new Error(payload.message || payload.error || `Wrap-up code create failed: ${response.status}`);
-        return payload;
-      }
-
-      async function setMessageConversationWrapup(token, wrapupCodeId, notes) {
-        const url = `${API_BASE}/api/v2/conversations/messages/${encodeURIComponent(context.conversationId)}/participants/${encodeURIComponent(context.participantId)}/communications/${encodeURIComponent(context.communicationId)}/wrapup`;
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            code: wrapupCodeId,
-            notes: String(notes || "").trim(),
-          }),
-        });
-        const text = await response.text();
-        const payload = parseJson(text);
-        if (!response.ok) throw new Error(payload.message || payload.error || `Wrap-up assignment failed: ${response.status}`);
-        return payload;
-      }
-
       async function disconnectCurrentMessageCommunication(token) {
         const url = `${API_BASE}/api/v2/conversations/messages/${encodeURIComponent(context.conversationId)}/participants/${encodeURIComponent(context.participantId)}/communications/${encodeURIComponent(context.communicationId)}`;
         const response = await fetch(url, {
@@ -1450,13 +1386,6 @@ if (!interactionType) {
         const payload = parseJson(text);
         if (!response.ok) throw new Error(payload.message || payload.error || `Attribute update failed: ${response.status}`);
         return payload;
-      }
-
-      function updateSubmitState() {
-        if (sessionStorage.getItem(submitKey) === "true") {
-          submitButton.disabled = true;
-          setRuntimeStatus("Prospects already submitted for this conversation.");
-        }
       }
 
       async function loginOrRefreshOAuthToken() {

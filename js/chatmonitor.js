@@ -4,7 +4,7 @@
  *          Uses communication-leg send keys, runtime memory, localStorage, and participant data duplicate checks.
  *          Maintains support/admin dashboard status and exportable logs.
  */
-const APP_VERSION = 'v1.0.0';
+const APP_VERSION = 'v1.0.1';
 let currentUser = null;
 let channel = null;
 let notifySocket = null;
@@ -171,6 +171,7 @@ const EXPECTED_GCB_PARTICIPANT_ATTRIBUTES = [
   {group:'HOLD_LABEL', name:'AFT_GCB_HoldAlertTitle', required:true},
   {group:'HOLD_LABEL', name:'AFT_GCB_AutoResumeSentText', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_InteractionOutcomeMultiSelect', required:true},
+  {group:'PROSPECTS', name:'AFT_GCB_ProspectMaxContactReasonSelections', required:true},
   {group:'LOGGING', name:'AFT_GCB_EnableParticipantLogs', required:true},
   {group:'LOGGING', name:'AFT_GCB_EnableBrowserDebug', required:true},
   {group:'PROSPECTS', name:'AFT_GCB_ContactReasonSeparator', required:true},
