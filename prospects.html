@@ -1,7 +1,7 @@
 <!--
   Author: Sivakumar Chandrahasu | Created: 2026-07-07 | Updated: 2026-07-20
   Purpose: Prospects wrap-up page for Contact Reason and Interaction Outcome selection.
-           Loads Architect-prepared participant values, filters outcomes, and submits Prospect data to the workflow-trigger process.
+           Loads Architect-prepared participant values, filters outcomes, and submits Prospect data to the workflow-trigger process. Maintenance fix: save the final log marker before PENDING so PENDING remains the final participant-data update.
            Can open directly and silently recover through index.html only when token is missing.
 -->
 <!doctype html>
@@ -1247,14 +1247,16 @@ if (!interactionType) {
           appendSubmitLog("PROSPECT_DATA_SAVED");
           await updateAssignDebugAttribute(token);
 
-          // PENDING must be written separately and last because it is the
-          // Process Automation Trigger match condition.
+          // Write the final Prospect log marker first.
+          appendSubmitLog("WORKFLOW_TRIGGERED_STATUS_PENDING");
+          await updateAssignDebugAttribute(token);
+
+          // PENDING must be the final participant-data update because it is the
+          // Process Automation Trigger match condition. Do not write any
+          // participant attributes after this call.
           await setParticipantAttributes(token, {
             AFT_GCB_ProspectWrapupStatus: "PENDING"
           });
-
-          appendSubmitLog("WORKFLOW_TRIGGERED_STATUS_PENDING");
-          await updateAssignDebugAttribute(token);
 
           if (wrapupConfig.disconnectAfterSubmit) {
             setRuntimeStatus("Prospect submitted. Disconnecting current chat...");
